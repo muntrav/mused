@@ -333,7 +333,9 @@ export class WebDesktopAPI implements DesktopAPI {
   }
 
   async transcribeVoice() {
-    throw new Error('Voice transcription is available in the desktop app. Use typed input on the web.')
+    throw new Error(
+      'Voice transcription is available in the desktop app. Use typed input on the web.',
+    )
   }
 
   async cancelVoice() {}

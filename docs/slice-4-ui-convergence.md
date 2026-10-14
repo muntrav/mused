@@ -19,10 +19,10 @@ This slice reuses the canonical renderer rather than reproducing it. No web-only
 
 ## Runtime boundary
 
-~~~text
+```text
 Electron renderer — DesktopAPI —> preload/main —> Muse or Codex
 Browser renderer  — DesktopAPI —> WebDesktopAPI —> authenticated WSS/HTTP gateway
-~~~
+```
 
 Browser credentials remain in the gateway session cookie. Codex credentials and workspace access stay server-side.
 

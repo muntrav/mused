@@ -355,7 +355,9 @@ export class GatewayServer {
       return this.respond(
         client,
         request.requestId,
-        await this.agent.listModels(typeof input?.threadId === 'string' ? input.threadId : undefined),
+        await this.agent.listModels(
+          typeof input?.threadId === 'string' ? input.threadId : undefined,
+        ),
       )
     if (request.action === 'rename-thread') {
       await this.agent.renameThread(String(input?.threadId ?? ''), String(input?.name ?? ''))
@@ -375,10 +377,7 @@ export class GatewayServer {
       return this.respond(
         client,
         request.requestId,
-        await this.agent.readOutput(
-          String(input?.threadId ?? ''),
-          String(input?.itemId ?? ''),
-        ),
+        await this.agent.readOutput(String(input?.threadId ?? ''), String(input?.itemId ?? '')),
       )
     if (request.action === 'approve') {
       await this.agent.respondToApproval({

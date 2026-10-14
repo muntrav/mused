@@ -27,7 +27,5 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: string |
 }
 
 createRoot(document.getElementById('root')!).render(
-  <ErrorBoundary>
-    {window.location.pathname === '/setup' ? <Setup /> : <App />}
-  </ErrorBoundary>,
+  <ErrorBoundary>{window.location.pathname === '/setup' ? <Setup /> : <App />}</ErrorBoundary>,
 )
