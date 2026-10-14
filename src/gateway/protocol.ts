@@ -15,13 +15,17 @@ export const gatewayRequestSchema = z.discriminatedUnion('type', [
       'read-thread',
       'start-turn',
       'cancel-turn',
+      'auth-status',
+      'login',
+      'cancel-login',
+      'logout',
     ]),
     input: z.unknown().optional(),
   }),
   z.object({
     type: z.literal('task'),
     requestId: z.string().min(1).max(100),
-    action: z.enum(['list', 'create', 'get', 'plan', 'check', 'diff', 'approve', 'cancel']),
+    action: z.enum(['list', 'create', 'get', 'plan', 'check', 'diff', 'preview', 'approve', 'cancel']),
     input: z.unknown().optional(),
   }),
 ])
@@ -32,12 +36,12 @@ export type GatewayRequestInput =
   | {
       type: 'agent'
       action:
-        'status' | 'list-threads' | 'start-thread' | 'read-thread' | 'start-turn' | 'cancel-turn'
+        'status' | 'list-threads' | 'start-thread' | 'read-thread' | 'start-turn' | 'cancel-turn' | 'auth-status' | 'login' | 'cancel-login' | 'logout'
       input?: unknown
     }
   | {
       type: 'task'
-      action: 'list' | 'create' | 'get' | 'plan' | 'check' | 'diff' | 'approve' | 'cancel'
+      action: 'list' | 'create' | 'get' | 'plan' | 'check' | 'diff' | 'preview' | 'approve' | 'cancel'
       input?: unknown
     }
 
