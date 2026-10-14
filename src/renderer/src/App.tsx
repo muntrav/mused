@@ -41,6 +41,7 @@ import {
   type Preferences,
   type SessionView,
   type Theme,
+  type WorkspaceProject,
 } from '../../shared/protocol'
 import { Composer } from './components/Composer'
 import { CommandMenu } from './components/CommandMenu'
@@ -55,6 +56,7 @@ import {
 } from './components/Primitives'
 import { Settings, themes } from './components/Settings'
 import { Transcript } from './components/Transcript'
+import { WorkspacePicker } from './components/WorkspacePicker'
 import { DocsPage, FilesPage, ProjectsPage } from './components/WorkspacePages'
 
 const starters = [
@@ -122,6 +124,10 @@ export function App() {
   const [rename, setRename] = useState(false)
   const [newName, setNewName] = useState('')
   const [toast, setToast] = useState<{ message: string; kind: 'error' | 'success' } | null>(null)
+  const [workspacePickerOpen, setWorkspacePickerOpen] = useState(false)
+  const [workspaceProjects, setWorkspaceProjects] = useState<WorkspaceProject[]>([])
+  const [workspaceLoading, setWorkspaceLoading] = useState(false)
+  const [workspaceError, setWorkspaceError] = useState('')
   const [darkSystem, setDarkSystem] = useState(
     window.matchMedia('(prefers-color-scheme: dark)').matches,
   )
@@ -253,6 +259,19 @@ export function App() {
     setArchived(false)
   }
   const chooseProject = async () => {
+    if (window.muse.listProjects) {
+      setWorkspacePickerOpen(true)
+      setWorkspaceLoading(true)
+      setWorkspaceError('')
+      try {
+        setWorkspaceProjects(await window.muse.listProjects())
+      } catch (error) {
+        setWorkspaceError(error instanceof Error ? error.message : String(error))
+      } finally {
+        setWorkspaceLoading(false)
+      }
+      return
+    }
     try {
       const chosen = await window.muse.chooseProject()
       if (chosen) {
@@ -262,6 +281,21 @@ export function App() {
     } catch (error) {
       showError(error instanceof Error ? error.message : String(error))
     }
+  }
+  const selectWorkspace = (entry: WorkspaceProject) => {
+    setWorkspacePickerOpen(false)
+    setProject(entry.path)
+    setWorkspaceError('')
+    void window.muse
+      .savePreferences({
+        recentProjects: [
+          entry.path,
+          ...preferences.recentProjects.filter((path) => path !== entry.path),
+        ].slice(0, 30),
+      })
+      .then(setPreferences)
+      .catch((error: Error) => showError(error.message))
+    startNew()
   }
   const openSession = async (sessionId: string) => {
     setPage('chat')
@@ -400,9 +434,8 @@ export function App() {
       if (!current) {
         let root = project
         if (!root) {
-          root = (await window.muse.chooseProject()) || ''
-          if (!root) return false
-          setProject(root)
+          await chooseProject()
+          return false
         }
         current = await window.muse.createSession(root, modelId || undefined)
         if (openSequence.current === sequence) activeId.current = current.session.sessionId
@@ -644,7 +677,10 @@ export function App() {
                 }}
                 options={[
                   { value: '', label: 'All projects' },
-                  ...preferences.recentProjects.map((path) => ({
+                  ...Array.from(new Set([
+                    ...workspaceProjects.map((entry) => entry.path),
+                    ...preferences.recentProjects,
+                  ])).map((path) => ({
                     value: path,
                     label: projectName(path),
                   })),
@@ -1156,6 +1192,16 @@ export function App() {
             </div>
           </form>
         </Dialog>
+      )}
+      {workspacePickerOpen && (
+        <WorkspacePicker
+          projects={workspaceProjects}
+          loading={workspaceLoading}
+          error={workspaceError}
+          onClose={() => setWorkspacePickerOpen(false)}
+          onRefresh={() => void chooseProject()}
+          onSelect={selectWorkspace}
+        />
       )}
       {toast && (
         <div className={`toast ${toast.kind}`} role={toast.kind === 'error' ? 'alert' : 'status'}>

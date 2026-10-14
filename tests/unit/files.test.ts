@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { listProjectFiles, readProjectFile } from '../../src/main/files'
+import { listAvailableProjects, listProjectFiles, readProjectFile } from '../../src/main/files'
 import { parseGitStatus } from '../../src/main/git'
 import { readPreferences, writePreferences } from '../../src/main/preferences'
 import { projectName } from '../../src/renderer/src/components/Primitives'
@@ -28,6 +28,19 @@ describe('project filesystem boundary', () => {
     await expect(readProjectFile(root, 'link')).rejects.toThrow('outside')
     expect((await listProjectFiles(root, '')).map((file) => file.name)).toEqual(['hello.ts'])
   })
+  it('catalogues only configured project directories', async () => {
+    const root = join(temporary, 'workspaces')
+    const app = join(root, 'mused')
+    const notes = join(root, 'notes')
+    await mkdir(join(app, '.git'), { recursive: true })
+    await mkdir(notes, { recursive: true })
+    await writeFile(join(notes, 'package.json'), '{}')
+    await mkdir(join(root, 'node_modules'), { recursive: true })
+    const projects = await listAvailableProjects([root])
+    expect(projects.map((project) => project.name)).toEqual(['mused', 'notes'])
+    expect(projects.map((project) => project.path)).toEqual([await realpath(app), await realpath(notes)])
+  })
+
   it('rejects binary and oversized text previews', async () => {
     await writeFile(join(temporary, 'binary'), Buffer.from([1, 0, 2]))
     await writeFile(join(temporary, 'large'), 'x'.repeat(512 * 1024 + 1))

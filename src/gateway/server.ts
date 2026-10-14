@@ -16,7 +16,7 @@ import type { ChangeRisk } from '../shared/change-task'
 import { gatewayRequestSchema, type GatewayEvent, type GatewayRequest } from './protocol'
 import { SelfDevelopmentService } from '../main/self-development/service'
 import { getGitDiff, getGitStatus } from '../main/git'
-import { listProjectFiles, readProjectFile } from '../main/files'
+import { listAvailableProjects, listProjectFiles, readProjectFile } from '../main/files'
 
 const MAX_BODY_BYTES = 64 * 1024
 const MAX_MESSAGE_BYTES = 1024 * 1024
@@ -443,6 +443,12 @@ export class GatewayServer {
     request: Extract<GatewayRequest, { type: 'workspace' }>,
   ) {
     const input = request.input as Record<string, unknown> | undefined
+    if (request.action === 'list-projects')
+      return this.respond(
+        client,
+        request.requestId,
+        await listAvailableProjects(this.allowedWorkspaceRoots),
+      )
     const project = String(input?.project ?? '')
     if (!project) throw new Error('A project path is required.')
     this.assertWorkspace(project)

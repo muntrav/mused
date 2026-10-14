@@ -10,6 +10,7 @@ import type {
   QuestionAnswer,
   SessionView,
   UpdateStatus,
+  WorkspaceProject,
 } from '../shared/protocol'
 import { preferencesSchema } from '../shared/protocol'
 import type {
@@ -160,9 +161,15 @@ export class WebDesktopAPI implements DesktopAPI {
     return null
   }
 
+  async listProjects(): Promise<WorkspaceProject[]> {
+    return this.client.request<WorkspaceProject[]>({
+      type: 'workspace',
+      action: 'list-projects',
+    })
+  }
+
   async chooseProject() {
-    const selected = window.prompt('Workspace path', this.preferences.recentProjects[0] || '')
-    return selected?.trim() || null
+    return null
   }
 
   async savePreferences(patch: Partial<Preferences>) {

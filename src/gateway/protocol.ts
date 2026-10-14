@@ -37,7 +37,7 @@ export const gatewayRequestSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('workspace'),
     requestId: z.string().min(1).max(100),
-    action: z.enum(['git-status', 'git-diff', 'list-files', 'read-file']),
+    action: z.enum(['list-projects', 'git-status', 'git-diff', 'list-files', 'read-file']),
     input: z.unknown().optional(),
   }),
   z.object({
@@ -102,7 +102,7 @@ export type GatewayRequestInput =
     }
   | {
       type: 'workspace'
-      action: 'git-status' | 'git-diff' | 'list-files' | 'read-file'
+      action: 'list-projects' | 'git-status' | 'git-diff' | 'list-files' | 'read-file'
       input?: unknown
     }
   | {

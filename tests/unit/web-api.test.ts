@@ -18,6 +18,7 @@ describe('desktop/web renderer bridge', () => {
     expect(typeof api.bootstrap).toBe('function')
     expect(typeof api.openSession).toBe('function')
     expect(typeof api.listFiles).toBe('function')
+    expect(typeof api.listProjects).toBe('function')
     expect(typeof api.openExternal).toBe('function')
   })
 
