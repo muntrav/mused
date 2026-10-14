@@ -18,6 +18,12 @@ Mused is a desktop home for Muse Code across macOS, Windows, and Linux. Your ins
 
 The next development stages are documented in [the phased execution plan](docs/mused-phased-execution-plan.md). Mused will preserve the current layout, themes, logos, mascot, artwork, typography, spacing, window chrome, and interaction language while adding provider-neutral adapters, a hosted browser interface, and an approval-gated self-developing coding environment.
 
+## Deployment model
+
+GitHub is the source of truth for Mused. GitHub Actions performs typechecking, tests, security checks, Electron packaging, and release artifact creation. Cloudflare Pages hosts the browser interface and provides preview deployments; Cloudflare Workers or Access provide the edge authentication and routing boundary.
+
+Persistent Codex/Muse sessions, isolated project workspaces, live development servers, and hot-reload previews run on a protected VPS runtime. The VPS is not the release build machine: production artifacts arrive through the approved CI/CD path.
+
 ## What it does
 
 - Discovers your existing `muse` installation across macOS, Linux, and Windows, including your login-shell environment and standard installation paths. No separate API key or desktop account.
