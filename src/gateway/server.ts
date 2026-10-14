@@ -15,6 +15,8 @@ import { ChangeTaskStore } from '../main/workspaces/change-task-store'
 import type { ChangeRisk } from '../shared/change-task'
 import { gatewayRequestSchema, type GatewayEvent, type GatewayRequest } from './protocol'
 import { SelfDevelopmentService } from '../main/self-development/service'
+import { getGitDiff, getGitStatus } from '../main/git'
+import { listProjectFiles, readProjectFile } from '../main/files'
 
 const MAX_BODY_BYTES = 64 * 1024
 const MAX_MESSAGE_BYTES = 1024 * 1024
@@ -300,6 +302,7 @@ export class GatewayServer {
       if (request.type === 'subscribe')
         return this.respond(client, request.requestId, { subscribed: true })
       if (request.type === 'agent') return this.handleAgentRequest(client, request)
+      if (request.type === 'workspace') return this.handleWorkspaceRequest(client, request)
       if (request.type === 'task') return this.handleTaskRequest(client, request)
       if (request.type === 'self-update') return this.handleSelfUpdateRequest(client, request)
       throw new Error('Unsupported gateway request.')
@@ -348,6 +351,50 @@ export class GatewayServer {
         request.requestId,
         await this.agent.listThreads(typeof input?.cursor === 'string' ? input.cursor : undefined),
       )
+    if (request.action === 'list-models')
+      return this.respond(
+        client,
+        request.requestId,
+        await this.agent.listModels(
+          typeof input?.threadId === 'string' ? input.threadId : undefined,
+        ),
+      )
+    if (request.action === 'rename-thread') {
+      await this.agent.renameThread(String(input?.threadId ?? ''), String(input?.name ?? ''))
+      return this.respond(client, request.requestId, { updated: true })
+    }
+    if (request.action === 'set-model') {
+      await this.agent.setModel(String(input?.threadId ?? ''), String(input?.modelId ?? ''))
+      return this.respond(client, request.requestId, { updated: true })
+    }
+    if (request.action === 'compact-thread')
+      return this.respond(
+        client,
+        request.requestId,
+        await this.agent.compactThread(String(input?.threadId ?? '')),
+      )
+    if (request.action === 'read-output')
+      return this.respond(
+        client,
+        request.requestId,
+        await this.agent.readOutput(String(input?.threadId ?? ''), String(input?.itemId ?? '')),
+      )
+    if (request.action === 'approve') {
+      await this.agent.respondToApproval({
+        threadId: String(input?.threadId ?? ''),
+        approvalId: String(input?.approvalId ?? ''),
+        choiceId: String(input?.choiceId ?? ''),
+      })
+      return this.respond(client, request.requestId, { updated: true })
+    }
+    if (request.action === 'answer' || request.action === 'cancel-question') {
+      await this.agent.respondToQuestion({
+        threadId: String(input?.threadId ?? ''),
+        questionId: String(input?.questionId ?? ''),
+        answers: request.action === 'cancel-question' ? [] : ((input?.answers ?? []) as never),
+      })
+      return this.respond(client, request.requestId, { updated: true })
+    }
     if (request.action === 'start-thread') {
       const workspaceRoot = String(input?.workspaceRoot ?? '')
       if (!workspaceRoot) throw new Error('A workspace root is required.')
@@ -379,6 +426,9 @@ export class GatewayServer {
           text: String(input?.text ?? ''),
           effort: String(input?.effort ?? 'high'),
           mode: input?.mode === 'steer' ? 'steer' : 'queue',
+          attachments: Array.isArray(input?.attachments)
+            ? input.attachments.filter((value): value is string => typeof value === 'string')
+            : undefined,
         }),
       )
     return this.respond(
@@ -386,6 +436,43 @@ export class GatewayServer {
       request.requestId,
       await this.agent.cancelTurn(String(input?.threadId ?? '')),
     )
+  }
+
+  private async handleWorkspaceRequest(
+    client: Client,
+    request: Extract<GatewayRequest, { type: 'workspace' }>,
+  ) {
+    const input = request.input as Record<string, unknown> | undefined
+    const project = String(input?.project ?? '')
+    if (!project) throw new Error('A project path is required.')
+    this.assertWorkspace(project)
+    if (request.action === 'git-status')
+      return this.respond(client, request.requestId, await getGitStatus(project))
+    if (request.action === 'git-diff')
+      return this.respond(
+        client,
+        request.requestId,
+        await getGitDiff(project, String(input?.path ?? '')),
+      )
+    if (request.action === 'list-files')
+      return this.respond(
+        client,
+        request.requestId,
+        await listProjectFiles(project, String(input?.directory ?? '')),
+      )
+    return this.respond(
+      client,
+      request.requestId,
+      await readProjectFile(project, String(input?.path ?? '')),
+    )
+  }
+
+  private assertWorkspace(project: string) {
+    if (
+      this.allowedWorkspaceRoots.length > 0 &&
+      !this.allowedWorkspaceRoots.some((root) => isPathInside(root, project))
+    )
+      throw new Error('This workspace is not allowed for the current session.')
   }
 
   private async handleTaskRequest(
