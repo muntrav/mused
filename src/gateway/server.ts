@@ -137,8 +137,8 @@ export class GatewayServer {
       if (this.staticRoot && request.method === 'GET' && !url.pathname.startsWith('/api/'))
         return this.serveStatic(url.pathname, response)
       this.requireHttpSession(request)
-      if (request.method === 'GET' && /^\\/api\\/tasks\\/[^/]+\\/preview(?:\\/|$)/.test(url.pathname)) {
-        const match = url.pathname.match(/^\\/api\\/tasks\\/([^/]+)\\/preview(?:\\/|$)/)
+      if (request.method === 'GET' && /^\/api\/tasks\/[^/]+\/preview(?:\/|$)/.test(url.pathname)) {
+        const match = url.pathname.match(/^\/api\/tasks\/([^/]+)\/preview(?:\/|$)/)
         if (!match) return this.json(response, 404, { error: 'not_found' })
         return this.taskService.proxyPreview(match[1], request, response)
       }
