@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import logoUrl from '../renderer/public/muse-logo.png'
+import type { AuthStatus, AgentItem, AgentThreadView } from '../shared/agent/protocol'
 import type { GatewayEvent } from '../gateway/protocol'
 import type { ChangeTask } from '../shared/change-task'
 import { GatewayClient } from './gateway-client'
@@ -7,18 +8,25 @@ import './styles.css'
 
 const client = new GatewayClient()
 
+function itemText(item: AgentItem) {
+  return item.displayText || item.text || item.visibleOutput || item.summary?.join('\n') || ''
+}
+
 export function App() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null)
   const [passcode, setPasscode] = useState('')
   const [error, setError] = useState('')
   const [connected, setConnected] = useState(false)
   const [provider, setProvider] = useState('')
+  const [auth, setAuth] = useState<AuthStatus | null>(null)
+  const [thread, setThread] = useState<AgentThreadView | null>(null)
+  const [workspaceRoot, setWorkspaceRoot] = useState('')
   const [prompt, setPrompt] = useState('')
-  const [reply, setReply] = useState('')
   const [page, setPage] = useState<'conversation' | 'tasks'>('conversation')
   const [tasks, setTasks] = useState<ChangeTask[]>([])
   const [repositoryRoot, setRepositoryRoot] = useState('')
   const [taskPrompt, setTaskPrompt] = useState('')
+  const [checkCommand, setCheckCommand] = useState('npm run typecheck')
 
   useEffect(() => {
     void client
@@ -32,19 +40,27 @@ export function App() {
     if (!authenticated) return
     let active = true
     const unsubscribe = client.subscribe((event: GatewayEvent) => {
-      if (event.type !== 'task') return
-      setTasks((current) => [event.task, ...current.filter((task) => task.id !== event.task.id)])
+      if (event.type === 'task') {
+        setTasks((current) => [event.task, ...current.filter((task) => task.id !== event.task.id)])
+        return
+      }
+      if (event.type !== 'event') return
+      if (event.event.type === 'auth') setAuth(event.event.status)
+      if (event.event.type === 'thread' && active) setThread(event.event.view)
+      if (event.event.type === 'connection') setConnected(event.event.status.state === 'ready')
     })
     void client
       .connect()
       .then(async () => {
         if (!active) return
         setConnected(true)
-        const status = await client.request<{ provider: string }>({
-          type: 'agent',
-          action: 'status',
-        })
-        if (active) setProvider(status.provider)
+        const status = await client.request<{
+          provider: string
+          auth: AuthStatus
+        }>({ type: 'agent', action: 'status' })
+        if (!active) return
+        setProvider(status.provider)
+        setAuth(status.auth)
         const currentTasks = await client.request<ChangeTask[]>({ type: 'task', action: 'list' })
         if (active) setTasks(currentTasks)
       })
@@ -61,46 +77,46 @@ export function App() {
   const statusLabel = useMemo(() => {
     if (!authenticated) return 'Sign in to continue'
     if (!connected) return 'Connecting to Mused'
-    return `Connected to ${provider || 'agent runtime'}`
+    return 'Connected to ' + (provider || 'agent runtime')
   }, [authenticated, connected, provider])
 
   const login = async () => {
     setError('')
     try {
-      await client.login(passcode)
-      setAuthenticated(true)
-      setPasscode('')
+      const status = await client.request<AuthStatus>({
+        type: 'agent',
+        action: 'login',
+        input: { method: 'browser' },
+      })
+      setAuth(status)
+      if (status.loginUrl) window.open(status.loginUrl, '_blank', 'noopener,noreferrer')
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason))
     }
   }
 
   const send = async () => {
-    if (!prompt.trim()) return
+    if (!prompt.trim() || !workspaceRoot.trim()) {
+      setError('Choose a workspace path and write a message first.')
+      return
+    }
     setError('')
     try {
-      const threads = await client.request<{
-        items: Array<{ id: string }>
-        nextCursor: string | null
-      }>({
-        type: 'agent',
-        action: 'list-threads',
-      })
-      let threadId = threads.items[0]?.id
+      let threadId = thread?.thread.id
       if (!threadId) {
-        const thread = await client.request<{ thread: { id: string } }>({
+        const created = await client.request<AgentThreadView>({
           type: 'agent',
           action: 'start-thread',
-          input: { workspaceRoot: '/' },
+          input: { workspaceRoot },
         })
-        threadId = thread.thread.id
+        threadId = created.thread.id
+        setThread(created)
       }
       await client.request({
         type: 'agent',
         action: 'start-turn',
         input: { threadId, text: prompt, effort: 'high', mode: 'queue' },
       })
-      setReply('The request was accepted by the Mused agent boundary.')
       setPrompt('')
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason))
@@ -126,6 +142,43 @@ export function App() {
     }
   }
 
+  const runTask = async (task: ChangeTask) => {
+    const pieces = checkCommand.trim().split(/\s+/).filter(Boolean)
+    if (!pieces.length) return
+    setError('')
+    try {
+      await client.request({
+        type: 'task',
+        action: 'plan',
+        input: {
+          taskId: task.id,
+          plan: 'Inspect the requested behavior, implement the smallest safe change, run checks, and preview the isolated worktree.',
+        },
+      })
+      await client.request({
+        type: 'task',
+        action: 'check',
+        input: {
+          taskId: task.id,
+          checks: [
+            { name: pieces.join(' '), command: pieces[0], args: pieces.slice(1), timeout: 120000 },
+          ],
+          preview: { command: 'npm', args: ['run', 'web:dev'] },
+        },
+      })
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason))
+    }
+  }
+
+  const approveTask = async (task: ChangeTask) => {
+    try {
+      await client.request({ type: 'task', action: 'approve', input: { taskId: task.id } })
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason))
+    }
+  }
+
   if (authenticated === null) return <main className="web-loading">Loading Mused…</main>
   if (!authenticated)
     return (
@@ -143,10 +196,35 @@ export function App() {
             type="password"
             value={passcode}
             onChange={(event) => setPasscode(event.target.value)}
-            onKeyDown={(event) => event.key === 'Enter' && void login()}
+            onKeyDown={(event) =>
+              event.key === 'Enter' &&
+              void (async () => {
+                try {
+                  await client.login(passcode)
+                  setAuthenticated(true)
+                  setPasscode('')
+                } catch (reason) {
+                  setError(reason instanceof Error ? reason.message : String(reason))
+                }
+              })()
+            }
             autoComplete="current-password"
           />
-          <button className="web-button primary" onClick={() => void login()} disabled={!passcode}>
+          <button
+            className="web-button primary"
+            onClick={() =>
+              void (async () => {
+                try {
+                  await client.login(passcode)
+                  setAuthenticated(true)
+                  setPasscode('')
+                } catch (reason) {
+                  setError(reason instanceof Error ? reason.message : String(reason))
+                }
+              })()
+            }
+            disabled={!passcode}
+          >
             Continue
           </button>
           {error && (
@@ -167,14 +245,14 @@ export function App() {
         </div>
         <p className="web-eyebrow">WORKSPACE</p>
         <button
-          className={`web-nav ${page === 'conversation' ? 'active' : ''}`}
+          className={'web-nav ' + (page === 'conversation' ? 'active' : '')}
           onClick={() => setPage('conversation')}
         >
           Conversation
         </button>
         <button className="web-nav">Projects</button>
         <button
-          className={`web-nav ${page === 'tasks' ? 'active' : ''}`}
+          className={'web-nav ' + (page === 'tasks' ? 'active' : '')}
           onClick={() => setPage('tasks')}
         >
           Change tasks
@@ -195,18 +273,52 @@ export function App() {
               </div>
               <span className="web-pill">{provider || 'agent'}</span>
             </header>
+            {auth?.state !== 'authenticated' && (
+              <section className="web-card web-auth-card">
+                <strong>{auth?.message || 'Codex authentication is required.'}</strong>
+                <button
+                  className="web-button primary"
+                  onClick={() => void login()}
+                  disabled={auth?.state === 'logging-in'}
+                >
+                  {auth?.state === 'logging-in' ? 'Waiting for login…' : 'Sign in with ChatGPT'}
+                </button>
+                {auth?.loginUrl && (
+                  <a href={auth.loginUrl} target="_blank" rel="noreferrer">
+                    Open login page
+                  </a>
+                )}
+                {auth?.deviceCode && <p className="web-muted">Device code: {auth.deviceCode}</p>}
+              </section>
+            )}
             <div className="web-transcript">
-              <div className="web-welcome">
-                <img src={logoUrl} alt="" />
-                <h2>What would you like to build?</h2>
-                <p>
-                  Use the hosted Mused runtime to explore a workspace or start a controlled change
-                  task.
-                </p>
-              </div>
-              {reply && <div className="web-message agent">{reply}</div>}
+              {!thread?.items.length ? (
+                <div className="web-welcome">
+                  <img src={logoUrl} alt="" />
+                  <h2>What would you like to build?</h2>
+                  <p>
+                    Use the hosted Mused runtime to explore a workspace with live Codex streaming.
+                  </p>
+                </div>
+              ) : (
+                thread.items.map((entry) => (
+                  <div
+                    className={'web-message ' + (entry.kind === 'userMessage' ? 'user' : 'agent')}
+                    key={entry.itemId}
+                  >
+                    {itemText(entry)}
+                  </div>
+                ))
+              )}
             </div>
             <div className="web-composer">
+              <input
+                className="web-workspace-input"
+                value={workspaceRoot}
+                onChange={(event) => setWorkspaceRoot(event.target.value)}
+                placeholder="/srv/projects/your-repo"
+                aria-label="Workspace path"
+              />
               <textarea
                 value={prompt}
                 onChange={(event) => setPrompt(event.target.value)}
@@ -221,7 +333,7 @@ export function App() {
               <button
                 className="web-button primary"
                 onClick={() => void send()}
-                disabled={!prompt.trim() || !connected}
+                disabled={!prompt.trim() || !workspaceRoot.trim() || !connected}
               >
                 Send
               </button>
@@ -240,8 +352,8 @@ export function App() {
               <section className="web-card web-task-form">
                 <h2>Request a controlled change</h2>
                 <p className="web-muted">
-                  Mused will create an isolated worktree. Nothing is applied to the running project
-                  until approval.
+                  Mused creates an isolated worktree, runs checks, and starts a preview before
+                  approval.
                 </p>
                 <label className="web-label" htmlFor="repository-root">
                   Repository path
@@ -260,6 +372,14 @@ export function App() {
                   value={taskPrompt}
                   onChange={(event) => setTaskPrompt(event.target.value)}
                   placeholder="Change how this button works…"
+                />
+                <label className="web-label" htmlFor="check-command">
+                  Validation command
+                </label>
+                <input
+                  id="check-command"
+                  value={checkCommand}
+                  onChange={(event) => setCheckCommand(event.target.value)}
                 />
                 <button
                   className="web-button primary"
@@ -282,6 +402,29 @@ export function App() {
                       </div>
                       <p className="web-muted">{task.repositoryRoot}</p>
                       {task.worktreePath && <p className="web-task-path">{task.worktreePath}</p>}
+                      {task.preview.url && task.preview.status === 'ready' && (
+                        <a
+                          href={task.preview.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="web-button"
+                        >
+                          Open live preview
+                        </a>
+                      )}
+                      {task.state === 'requested' && (
+                        <button className="web-button" onClick={() => void runTask(task)}>
+                          Plan, check, and preview
+                        </button>
+                      )}
+                      {task.state === 'awaiting-approval' && (
+                        <button
+                          className="web-button primary"
+                          onClick={() => void approveTask(task)}
+                        >
+                          Approve change
+                        </button>
+                      )}
                       {task.error && <p className="web-error">{task.error}</p>}
                     </article>
                   ))

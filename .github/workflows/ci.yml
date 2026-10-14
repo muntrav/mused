@@ -19,6 +19,7 @@ jobs:
       - run: npm ci
       - run: npm run format:check
       - run: npm test
+      - run: npm run web:build
       - run: npm run package:unsigned
       - name: Verify setup without an installed CLI
         run: npx playwright test tests/e2e/setup.spec.ts

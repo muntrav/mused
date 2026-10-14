@@ -6,7 +6,11 @@ import type { Duplex } from 'node:stream'
 import { WebSocketServer, WebSocket, type RawData } from 'ws'
 import type { AgentAdapter } from '../shared/agent/adapter'
 import { agentEventSchema } from '../shared/agent/protocol'
-import { ChangeTaskService, type ApprovedCheck } from '../main/workspaces/change-task-service'
+import {
+  ChangeTaskService,
+  type ApprovedCheck,
+  type PreviewInput,
+} from '../main/workspaces/change-task-service'
 import { ChangeTaskStore } from '../main/workspaces/change-task-store'
 import type { ChangeRisk } from '../shared/change-task'
 import { gatewayRequestSchema, type GatewayEvent, type GatewayRequest } from './protocol'
@@ -137,6 +141,11 @@ export class GatewayServer {
       if (this.staticRoot && request.method === 'GET' && !url.pathname.startsWith('/api/'))
         return this.serveStatic(url.pathname, response)
       this.requireHttpSession(request)
+      if (request.method === 'GET' && /^\/api\/tasks\/[^/]+\/preview(?:\/|$)/.test(url.pathname)) {
+        const match = url.pathname.match(/^\/api\/tasks\/([^/]+)\/preview(?:\/|$)/)
+        if (!match) return this.json(response, 404, { error: 'not_found' })
+        return this.taskService.proxyPreview(match[1], request, response)
+      }
       if (request.method === 'GET' && url.pathname === '/api/capabilities')
         return this.json(response, 200, {
           provider: this.agent.provider,
@@ -227,6 +236,22 @@ export class GatewayServer {
     request: Extract<GatewayRequest, { type: 'agent' }>,
   ) {
     const input = request.input as Record<string, unknown> | undefined
+    if (request.action === 'auth-status')
+      return this.respond(client, request.requestId, await this.agent.auth.status())
+    if (request.action === 'login')
+      return this.respond(
+        client,
+        request.requestId,
+        await this.agent.auth.login(input?.method === 'device' ? 'device' : 'browser'),
+      )
+    if (request.action === 'cancel-login') {
+      await this.agent.auth.cancelLogin()
+      return this.respond(client, request.requestId, await this.agent.auth.status())
+    }
+    if (request.action === 'logout') {
+      await this.agent.auth.logout()
+      return this.respond(client, request.requestId, await this.agent.auth.status())
+    }
     if (request.action === 'status')
       return this.respond(client, request.requestId, {
         provider: this.agent.provider,
@@ -309,10 +334,16 @@ export class GatewayServer {
       return this.respond(
         client,
         request.requestId,
-        await this.taskService.runChecks(taskId, (input?.checks ?? []) as ApprovedCheck[]),
+        await this.taskService.runChecks(
+          taskId,
+          (input?.checks ?? []) as ApprovedCheck[],
+          input?.preview as PreviewInput | undefined,
+        ),
       )
     if (request.action === 'diff')
       return this.respond(client, request.requestId, await this.taskService.diff(taskId))
+    if (request.action === 'preview')
+      return this.respond(client, request.requestId, this.taskService.preview(taskId))
     if (request.action === 'approve')
       return this.respond(client, request.requestId, this.taskService.approve(taskId))
     return this.respond(client, request.requestId, await this.taskService.cancel(taskId))

@@ -44,7 +44,7 @@ export const changeTaskSchema = z.object({
   ),
   preview: z.object({
     status: z.enum(['not-started', 'starting', 'ready', 'unhealthy', 'stopped']),
-    url: z.string().url().optional(),
+    url: z.string().min(1).max(4096).optional(),
     message: z.string().optional(),
   }),
   approval: z.object({
