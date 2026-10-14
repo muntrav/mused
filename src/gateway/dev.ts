@@ -4,7 +4,7 @@ import { resolve } from 'node:path'
 import { ChangeTaskService } from '../main/workspaces/change-task-service'
 import { GatewayServer } from './server'
 import { createFileBackedSelfDevelopment } from '../main/self-development/service'
-import { GitHubActionsPromotionProvider, MemoryPromotionProvider } from '../main/self-development/promotion'
+import { GitHubActionsPromotionProvider, UnconfiguredPromotionProvider } from '../main/self-development/promotion'
 
 const secret = process.env.MUSED_GATEWAY_SECRET
 if (!secret) throw new Error('Set MUSED_GATEWAY_SECRET before starting the gateway.')
@@ -34,7 +34,7 @@ const promotionProvider = process.env.MUSED_GITHUB_TOKEN
       workflow: process.env.MUSED_GITHUB_WORKFLOW ?? 'self-update.yml',
       runUrlBase: process.env.MUSED_GITHUB_URL ?? 'https://github.com/muntrav/mused',
     })
-  : new MemoryPromotionProvider()
+  : new UnconfiguredPromotionProvider()
 const selfDevelopment = createFileBackedSelfDevelopment(
   resolve(process.env.MUSED_SELF_UPDATE_STORE ?? '.mused/self-updates.json'),
   resolve(process.env.MUSED_SELF_UPDATE_AUDIT ?? '.mused/self-update-audit.json'),
