@@ -332,7 +332,7 @@ export class WebDesktopAPI implements DesktopAPI {
     stream.getTracks().forEach((track) => track.stop())
   }
 
-  async transcribeVoice() {
+  async transcribeVoice(_audio: Uint8Array) {
     throw new Error(
       'Voice transcription is available in the desktop app. Use typed input on the web.',
     )
