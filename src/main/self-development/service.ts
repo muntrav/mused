@@ -4,7 +4,6 @@ import {
   classifyChange,
   isSafeHealthUrl,
   selfUpdateRecordSchema,
-  type SelfUpdateRecord,
 } from '../../shared/self-development'
 import {
   FileAuditStore,
