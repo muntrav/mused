@@ -1,5 +1,6 @@
 import { execFile as execFileCallback } from 'node:child_process'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -15,7 +16,7 @@ afterEach(async () => {
 })
 
 async function repository() {
-  const root = await mkdtemp(join('/tmp', 'mused-workspace-'))
+  const root = await mkdtemp(join(tmpdir(), 'mused-workspace-'))
   temporary.push(root)
   await execFile('git', ['init', '-q', root])
   await execFile('git', ['-C', root, 'config', 'user.email', 'test@mused.local'])
@@ -29,7 +30,7 @@ async function repository() {
 describe('isolated change workspaces', () => {
   it('creates an isolated worktree and rejects escaping paths', async () => {
     const root = await repository()
-    const taskRoot = await mkdtemp(join('/tmp', 'mused-tasks-'))
+    const taskRoot = await mkdtemp(join(tmpdir(), 'mused-tasks-'))
     temporary.push(taskRoot)
     const manager = new WorktreeManager(taskRoot)
     const workspace = await manager.create(root, 'task-1')
@@ -42,7 +43,7 @@ describe('isolated change workspaces', () => {
 
   it('executes only a named check command inside the worktree', async () => {
     const root = await repository()
-    const taskRoot = await mkdtemp(join('/tmp', 'mused-tasks-'))
+    const taskRoot = await mkdtemp(join(tmpdir(), 'mused-tasks-'))
     temporary.push(taskRoot)
     const manager = new WorktreeManager(taskRoot)
     const workspace = await manager.create(root, 'task-2')
@@ -51,7 +52,7 @@ describe('isolated change workspaces', () => {
       'process.stdout.write(process.cwd())',
     ])
     expect(result.exitCode).toBe(0)
-    expect(result.stdout).toBe(workspace.worktreePath)
+    expect(result.stdout).toBe(await realpath(workspace.worktreePath))
     await expect(manager.run(workspace, '../node')).rejects.toThrow('approved executable')
     await manager.remove(workspace)
   })
@@ -74,7 +75,7 @@ describe('change task state machine', () => {
 
   it('creates a worktree, records a plan, runs checks, and reaches approval', async () => {
     const root = await repository()
-    const taskRoot = await mkdtemp(join('/tmp', 'mused-tasks-'))
+    const taskRoot = await mkdtemp(join(tmpdir(), 'mused-tasks-'))
     temporary.push(taskRoot)
     const service = new ChangeTaskService(new ChangeTaskStore(), new WorktreeManager(taskRoot))
     const created = await service.create({ repositoryRoot: root, prompt: 'Inspect the button.' })
