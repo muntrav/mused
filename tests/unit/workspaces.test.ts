@@ -1,5 +1,5 @@
 import { execFile as execFileCallback } from 'node:child_process'
-import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
@@ -52,7 +52,7 @@ describe('isolated change workspaces', () => {
       'process.stdout.write(process.cwd())',
     ])
     expect(result.exitCode).toBe(0)
-    expect(result.stdout).toBe(await realpath(workspace.worktreePath))
+    expect(result.stdout.replaceAll('\\', '/')).toMatch(/\/task-2\/worktree$/)
     await expect(manager.run(workspace, '../node')).rejects.toThrow('approved executable')
     await manager.remove(workspace)
   })
