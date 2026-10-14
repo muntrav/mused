@@ -100,10 +100,9 @@ providers are equivalent.
 
 ### 3.6 Remote-build discipline
 
-Preview and production builds should run through the repository's supported CI,
-Cloudflare Builds, Pages, or Workers path where suitable. If a VPS is used for the
-runtime, it should receive an immutable release artifact or image; it should not become
-an untracked build machine.
+Preview and production builds should run through GitHub Actions and the configured Cloudflare Pages/Workers path where suitable. The VPS is allowed to run persistent workloads that GitHub and Cloudflare cannot provide reliably: authenticated agent sessions, isolated project workspaces, live development servers, HMR, and workspace-scoped checks. It must not become an untracked CI or release-build machine.
+
+The VPS runtime receives verified artifacts or deployment configuration through the repository release path and is isolated from unrelated services. Use a separate service account or container boundary, authenticated WSS or a private Cloudflare Tunnel, per-workspace CPU/memory/time limits, concurrency limits, idle cleanup, disk quotas, redacted logs, and no publicly exposed provider process port.
 
 ### 3.7 Mused design and identity preservation
 
@@ -415,8 +414,9 @@ workspace execution, while carrying Mused's current design into the browser.
 
 ```text
 public HTTPS/WSS
-  → reverse proxy / tunnel
-  → gateway process
+  → Cloudflare Pages / Access / Worker
+  → private Cloudflare Tunnel
+  → VPS Mused gateway
   → authenticated session supervisor
   → provider adapter
 ```
@@ -472,8 +472,9 @@ workspace execution isolated.
 - Add workspace registration and selection.
 - Support a defined initial workspace strategy:
   - GitHub-backed repository workspaces;
-  - explicitly uploaded project archives; or
-  - a user-authorized local connector.
+  - explicitly uploaded project archives;
+  - a user-authorized local connector; or
+  - VPS-hosted isolated workspaces for persistent sessions and live previews.
 - Add per-workspace process supervision:
   - one adapter process or session owner;
   - workspace working directory;
@@ -534,7 +535,7 @@ development demo.
 - Add resource quotas, idle session cleanup, concurrency limits, and backpressure.
 - Add durable session recovery after gateway restart.
 - Add backup/restore for non-secret metadata and explicit retention policies.
-- Add deployment pipeline that builds in CI and deploys immutable artifacts/images.
+- Add deployment pipeline that builds in GitHub Actions, publishes browser artifacts through Cloudflare, and delivers immutable runtime artifacts or configuration to the VPS.
 - Add staged rollout and rollback procedure.
 - Add security review for:
   - command execution;
@@ -696,8 +697,7 @@ current design identity.
 #### Risks and decisions
 
 - **Decision:** whether previews run on the VPS, in an isolated container, or through a
-  remote CI/preview platform. Prefer CI/preview infrastructure for release builds;
-  use isolated runtime workspaces only where live feedback requires them.
+  remote CI/preview platform. Prefer GitHub Actions and Cloudflare preview deployments for release builds; use isolated VPS runtime workspaces only where persistent sessions or live feedback require them.
 - **Risk:** HMR can conceal restart-only bugs. Every phase must include a clean build and
   fresh-start check.
 - **Risk:** browser previews may expose project data. Require authenticated, expiring
@@ -782,6 +782,19 @@ approval, and recover to the previous version if the change fails.
   application workspace.
 
 ## 8. Cross-workstream contracts
+
+### Deployment and runtime boundary
+
+The three workstreams share one operational boundary:
+
+| Workload | Location | Rule |
+| --- | --- | --- |
+| Source, CI checks, packaging, and release artifacts | GitHub Actions | Build from an exact commit; keep credentials in protected secrets. |
+| Browser UI and public preview | Cloudflare Pages | Deploy only verified commits; never fall back to a public localhost API. |
+| Edge authentication and routing | Cloudflare Access/Workers or private Tunnel | Do not expose provider ports or provider credentials to the browser. |
+| Persistent agent sessions and coding workspaces | Protected VPS | Isolate sessions, cap resources, clean up idle work, and preserve an operator recovery path. |
+
+The VPS is part of the runtime plane, not the source-of-truth or release-build plane. A workspace may execute builds and dev servers when live feedback requires it, but release artifacts must be produced and verified through the GitHub/Cloudflare workflow before being promoted.
 
 ### 8.1 Agent API contract
 
