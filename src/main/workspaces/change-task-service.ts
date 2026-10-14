@@ -15,10 +15,19 @@ export class ChangeTaskService {
     private readonly previews = new PreviewManager(),
   ) {}
 
-  async create(input: { repositoryRoot: string; prompt: string; risk?: ChangeRisk; baseRef?: string }) {
+  async create(input: {
+    repositoryRoot: string
+    prompt: string
+    risk?: ChangeRisk
+    baseRef?: string
+  }) {
     const task = this.store.create(input)
     try {
-      const workspace = await this.worktreeManager.create(input.repositoryRoot, task.id, input.baseRef)
+      const workspace = await this.worktreeManager.create(
+        input.repositoryRoot,
+        task.id,
+        input.baseRef,
+      )
       this.workspaces.set(task.id, workspace)
       return this.store.update(task.id, {
         worktreePath: workspace.worktreePath,
@@ -56,7 +65,12 @@ export class ChangeTaskService {
           },
         ],
       })
-      const result = await this.worktreeManager.run(workspace, check.command, check.args, check.timeout)
+      const result = await this.worktreeManager.run(
+        workspace,
+        check.command,
+        check.args,
+        check.timeout,
+      )
       results.push({
         name: check.name,
         command: [check.command, ...(check.args ?? [])].join(' '),

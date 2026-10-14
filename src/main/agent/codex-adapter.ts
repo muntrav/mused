@@ -23,8 +23,7 @@ import { JsonRpcProcess, type JsonRpcServerRequest } from './jsonrpc-process'
 import type { JsonRpcNotification } from './jsonrpc-stdio'
 
 type PendingInteraction =
-  | { kind: 'approval'; threadId: string }
-  | { kind: 'question'; threadId: string }
+  { kind: 'approval'; threadId: string } | { kind: 'question'; threadId: string }
 
 type CodexAccount = { type?: string; planType?: string }
 const provider = 'codex' as const
@@ -205,7 +204,10 @@ export class CodexAdapter implements AgentAdapter {
   }
 
   async listThreads(cursor?: string): Promise<Page<AgentThreadSummary>> {
-    const result = (await this.call('thread/list', { cursor, limit: 100 })) as Record<string, unknown>
+    const result = (await this.call('thread/list', { cursor, limit: 100 })) as Record<
+      string,
+      unknown
+    >
     const rows = Array.isArray(result.data)
       ? result.data
       : Array.isArray(result.threads)
@@ -213,7 +215,9 @@ export class CodexAdapter implements AgentAdapter {
         : []
     return {
       items: rows
-        .filter((entry): entry is Record<string, unknown> => Boolean(entry && typeof entry === 'object'))
+        .filter((entry): entry is Record<string, unknown> =>
+          Boolean(entry && typeof entry === 'object'),
+        )
         .map(summary),
       nextCursor: stringValue(result.nextCursor) || null,
     }
@@ -264,7 +268,8 @@ export class CodexAdapter implements AgentAdapter {
   async respondToApproval(input: ApprovalResponse) {
     const requestId = this.findPending(input.approvalId, 'approval', input.threadId)
     const pending = this.pending.get(requestId)
-    if (!pending || pending.kind !== 'approval') throw new Error('This approval is no longer active.')
+    if (!pending || pending.kind !== 'approval')
+      throw new Error('This approval is no longer active.')
     const choice = input.choiceId.toLowerCase()
     const decision = choice.includes('session')
       ? 'acceptForSession'
@@ -280,7 +285,8 @@ export class CodexAdapter implements AgentAdapter {
   async respondToQuestion(input: QuestionResponse) {
     const requestId = this.findPending(input.questionId, 'question', input.threadId)
     const pending = this.pending.get(requestId)
-    if (!pending || pending.kind !== 'question') throw new Error('This question is no longer active.')
+    if (!pending || pending.kind !== 'question')
+      throw new Error('This question is no longer active.')
     this.rpc?.respond(requestId, {
       answers: input.answers.map((answer) => ({
         questionId: answer.questionId,
@@ -293,7 +299,11 @@ export class CodexAdapter implements AgentAdapter {
 
   async listModels() {
     const result = (await this.call('model/list', { limit: 100 })) as Record<string, unknown>
-    const rows = Array.isArray(result.data) ? result.data : Array.isArray(result.models) ? result.models : []
+    const rows = Array.isArray(result.data)
+      ? result.data
+      : Array.isArray(result.models)
+        ? result.models
+        : []
     return rows.map(model)
   }
 
@@ -332,7 +342,10 @@ export class CodexAdapter implements AgentAdapter {
     this.authState = {
       provider,
       state: 'logging-in',
-      message: method === 'device' ? 'Enter the device code to finish Codex login.' : 'Complete Codex login in your browser.',
+      message:
+        method === 'device'
+          ? 'Enter the device code to finish Codex login.'
+          : 'Complete Codex login in your browser.',
       loginUrl: stringValue(result.authUrl, stringValue(result.loginUrl)) || undefined,
       deviceCode: stringValue(result.deviceCode, stringValue(result.userCode)) || undefined,
     }
@@ -354,7 +367,10 @@ export class CodexAdapter implements AgentAdapter {
   }
 
   private async refreshAuth() {
-    const result = (await this.call('account/read', { refreshToken: false })) as Record<string, unknown>
+    const result = (await this.call('account/read', { refreshToken: false })) as Record<
+      string,
+      unknown
+    >
     this.authState = accountStatus(result.account as CodexAccount | null | undefined)
     this.publish({ type: 'auth', status: this.authState })
   }
@@ -365,7 +381,9 @@ export class CodexAdapter implements AgentAdapter {
   }
 
   private async handleServerRequest(message: JsonRpcServerRequest) {
-    const params = (message.params && typeof message.params === 'object' ? message.params : {}) as Record<string, unknown>
+    const params = (
+      message.params && typeof message.params === 'object' ? message.params : {}
+    ) as Record<string, unknown>
     const threadId = stringValue(params.threadId)
     if (message.method === 'item/tool/requestUserInput') {
       const questions = Array.isArray(params.questions) ? params.questions : []
@@ -378,8 +396,14 @@ export class CodexAdapter implements AgentAdapter {
           const value = (entry && typeof entry === 'object' ? entry : {}) as Record<string, unknown>
           const options = Array.isArray(value.options)
             ? value.options.map((option) => {
-                const itemValue = (option && typeof option === 'object' ? option : {}) as Record<string, unknown>
-                return { label: stringValue(itemValue.label), description: stringValue(itemValue.description) }
+                const itemValue = (option && typeof option === 'object' ? option : {}) as Record<
+                  string,
+                  unknown
+                >
+                return {
+                  label: stringValue(itemValue.label),
+                  description: stringValue(itemValue.description),
+                }
               })
             : []
           return {
@@ -418,7 +442,10 @@ export class CodexAdapter implements AgentAdapter {
           },
           choices: ['accept', 'acceptForSession', 'decline', 'cancel'].map((choice) => ({
             id: choice,
-            label: choice === 'acceptForSession' ? 'Allow for session' : choice[0].toUpperCase() + choice.slice(1),
+            label:
+              choice === 'acceptForSession'
+                ? 'Allow for session'
+                : choice[0].toUpperCase() + choice.slice(1),
             decision: choice,
             scope: choice === 'acceptForSession' ? 'session' : 'turn',
           })),
@@ -434,13 +461,17 @@ export class CodexAdapter implements AgentAdapter {
 
   private handleNotification(message: JsonRpcNotification) {
     if (message.method === 'account/updated') {
-      const params = (message.params && typeof message.params === 'object' ? message.params : {}) as Record<string, unknown>
+      const params = (
+        message.params && typeof message.params === 'object' ? message.params : {}
+      ) as Record<string, unknown>
       this.authState = accountStatus((params.account ?? params) as CodexAccount | null)
       this.publish({ type: 'auth', status: this.authState })
       return
     }
     if (message.method === 'account/login/completed') {
-      const params = (message.params && typeof message.params === 'object' ? message.params : {}) as Record<string, unknown>
+      const params = (
+        message.params && typeof message.params === 'object' ? message.params : {}
+      ) as Record<string, unknown>
       this.authState =
         params.success === true
           ? { provider, state: 'authenticated', message: 'Codex login completed.' }
@@ -448,7 +479,9 @@ export class CodexAdapter implements AgentAdapter {
       this.publish({ type: 'auth', status: this.authState })
       return
     }
-    const params = (message.params && typeof message.params === 'object' ? message.params : {}) as Record<string, unknown>
+    const params = (
+      message.params && typeof message.params === 'object' ? message.params : {}
+    ) as Record<string, unknown>
     const threadId = stringValue(params.threadId)
     if (!threadId) return
     const view = this.ensureView(threadId)
@@ -485,7 +518,11 @@ export class CodexAdapter implements AgentAdapter {
       const incoming = item(params.item, stringValue(params.itemId))
       const index = view.items.findIndex((entry) => entry.itemId === incoming.itemId)
       if (index >= 0)
-        view.items[index] = { ...view.items[index], ...incoming, revision: view.items[index].revision + 1 }
+        view.items[index] = {
+          ...view.items[index],
+          ...incoming,
+          revision: view.items[index].revision + 1,
+        }
       else view.items.push(incoming)
       this.publish({ type: 'thread', view: structuredClone(view) })
     }
@@ -519,7 +556,11 @@ export class CodexAdapter implements AgentAdapter {
     if (Array.isArray(result.items)) values.push(...result.items)
     if (Array.isArray(result.turns))
       for (const turn of result.turns) {
-        if (turn && typeof turn === 'object' && Array.isArray((turn as Record<string, unknown>).items))
+        if (
+          turn &&
+          typeof turn === 'object' &&
+          Array.isArray((turn as Record<string, unknown>).items)
+        )
           values.push(...((turn as Record<string, unknown>).items as unknown[]))
       }
     return values.map((entry) => item(entry))
@@ -527,7 +568,8 @@ export class CodexAdapter implements AgentAdapter {
 
   private findPending(id: string, kind: PendingInteraction['kind'], threadId: string) {
     for (const [requestId, pending] of this.pending) {
-      if (pending.kind === kind && pending.threadId === threadId && String(requestId) === id) return requestId
+      if (pending.kind === kind && pending.threadId === threadId && String(requestId) === id)
+        return requestId
     }
     throw new Error('This interaction is no longer active.')
   }

@@ -1,5 +1,11 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
-import { JsonRpcLineDecoder, encodeJsonRpc, type JsonRpcMessage, type JsonRpcNotification, type JsonRpcRequest } from './jsonrpc-stdio'
+import {
+  JsonRpcLineDecoder,
+  encodeJsonRpc,
+  type JsonRpcMessage,
+  type JsonRpcNotification,
+  type JsonRpcRequest,
+} from './jsonrpc-stdio'
 
 type Pending = {
   resolve: (value: unknown) => void
@@ -44,7 +50,9 @@ export class JsonRpcProcess {
     this.child.on('error', (error) => this.fail(error))
     this.child.on('exit', (code, signal) => {
       if (!this.closed)
-        this.fail(new Error(`JSON-RPC process exited (${code ?? 'unknown'}${signal ? `/${signal}` : ''}).`))
+        this.fail(
+          new Error(`JSON-RPC process exited (${code ?? 'unknown'}${signal ? `/${signal}` : ''}).`),
+        )
       this.child = undefined
     })
   }
@@ -68,7 +76,11 @@ export class JsonRpcProcess {
     this.write(message)
   }
 
-  respond(id: string | number, result?: unknown, error?: { code: number; message: string; data?: unknown }) {
+  respond(
+    id: string | number,
+    result?: unknown,
+    error?: { code: number; message: string; data?: unknown },
+  ) {
     const message = error
       ? { jsonrpc: '2.0', id, error }
       : { jsonrpc: '2.0', id, result: result ?? {} }
@@ -80,7 +92,8 @@ export class JsonRpcProcess {
     const child = this.child
     this.child = undefined
     if (!child) return
-    for (const pending of this.pending.values()) pending.reject(new Error('JSON-RPC process closed.'))
+    for (const pending of this.pending.values())
+      pending.reject(new Error('JSON-RPC process closed.'))
     this.pending.clear()
     child.kill()
     await new Promise<void>((resolve) => child.once('close', () => resolve()))

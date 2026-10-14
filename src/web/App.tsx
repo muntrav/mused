@@ -29,7 +29,10 @@ export function App() {
   const [checkCommand, setCheckCommand] = useState('npm run typecheck')
 
   useEffect(() => {
-    void client.session().then(setAuthenticated).catch(() => setAuthenticated(false))
+    void client
+      .session()
+      .then(setAuthenticated)
+      .catch(() => setAuthenticated(false))
     return () => client.close()
   }, [])
 
@@ -147,14 +150,19 @@ export function App() {
       await client.request({
         type: 'task',
         action: 'plan',
-        input: { taskId: task.id, plan: 'Inspect the requested behavior, implement the smallest safe change, run checks, and preview the isolated worktree.' },
+        input: {
+          taskId: task.id,
+          plan: 'Inspect the requested behavior, implement the smallest safe change, run checks, and preview the isolated worktree.',
+        },
       })
       await client.request({
         type: 'task',
         action: 'check',
         input: {
           taskId: task.id,
-          checks: [{ name: pieces.join(' '), command: pieces[0], args: pieces.slice(1), timeout: 120000 }],
+          checks: [
+            { name: pieces.join(' '), command: pieces[0], args: pieces.slice(1), timeout: 120000 },
+          ],
           preview: { command: 'npm', args: ['run', 'web:dev'] },
         },
       })
@@ -180,26 +188,50 @@ export function App() {
           <p className="web-eyebrow">PRIVATE HOSTED ACCESS</p>
           <h1 id="login-title">Welcome to Mused</h1>
           <p className="web-muted">Connect to your protected Mused workspace.</p>
-          <label className="web-label" htmlFor="passcode">Access code</label>
-          <input id="passcode" type="password" value={passcode} onChange={(event) => setPasscode(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && void (async () => {
-            try {
-              await client.login(passcode)
-              setAuthenticated(true)
-              setPasscode('')
-            } catch (reason) {
-              setError(reason instanceof Error ? reason.message : String(reason))
+          <label className="web-label" htmlFor="passcode">
+            Access code
+          </label>
+          <input
+            id="passcode"
+            type="password"
+            value={passcode}
+            onChange={(event) => setPasscode(event.target.value)}
+            onKeyDown={(event) =>
+              event.key === 'Enter' &&
+              void (async () => {
+                try {
+                  await client.login(passcode)
+                  setAuthenticated(true)
+                  setPasscode('')
+                } catch (reason) {
+                  setError(reason instanceof Error ? reason.message : String(reason))
+                }
+              })()
             }
-          })()} autoComplete="current-password" />
-          <button className="web-button primary" onClick={() => void (async () => {
-            try {
-              await client.login(passcode)
-              setAuthenticated(true)
-              setPasscode('')
-            } catch (reason) {
-              setError(reason instanceof Error ? reason.message : String(reason))
+            autoComplete="current-password"
+          />
+          <button
+            className="web-button primary"
+            onClick={() =>
+              void (async () => {
+                try {
+                  await client.login(passcode)
+                  setAuthenticated(true)
+                  setPasscode('')
+                } catch (reason) {
+                  setError(reason instanceof Error ? reason.message : String(reason))
+                }
+              })()
             }
-          })()} disabled={!passcode}>Continue</button>
-          {error && <p className="web-error" role="alert">{error}</p>}
+            disabled={!passcode}
+          >
+            Continue
+          </button>
+          {error && (
+            <p className="web-error" role="alert">
+              {error}
+            </p>
+          )}
         </section>
       </main>
     )
@@ -207,77 +239,205 @@ export function App() {
   return (
     <main className="web-app">
       <aside className="web-sidebar">
-        <div className="web-brand"><img src={logoUrl} alt="" /><span>Mused</span></div>
+        <div className="web-brand">
+          <img src={logoUrl} alt="" />
+          <span>Mused</span>
+        </div>
         <p className="web-eyebrow">WORKSPACE</p>
-        <button className={'web-nav ' + (page === 'conversation' ? 'active' : '')} onClick={() => setPage('conversation')}>Conversation</button>
+        <button
+          className={'web-nav ' + (page === 'conversation' ? 'active' : '')}
+          onClick={() => setPage('conversation')}
+        >
+          Conversation
+        </button>
         <button className="web-nav">Projects</button>
-        <button className={'web-nav ' + (page === 'tasks' ? 'active' : '')} onClick={() => setPage('tasks')}>Change tasks</button>
+        <button
+          className={'web-nav ' + (page === 'tasks' ? 'active' : '')}
+          onClick={() => setPage('tasks')}
+        >
+          Change tasks
+        </button>
         <div className="web-sidebar-spacer" />
-        <p className="web-status"><span className={connected ? 'status-dot ready' : 'status-dot'} />{statusLabel}</p>
+        <p className="web-status">
+          <span className={connected ? 'status-dot ready' : 'status-dot'} />
+          {statusLabel}
+        </p>
       </aside>
       <section className="web-conversation">
         {page === 'conversation' ? (
           <>
             <header className="web-header">
-              <div><p className="web-eyebrow">MUSED HOSTED INTERFACE</p><h1>Conversation</h1></div>
+              <div>
+                <p className="web-eyebrow">MUSED HOSTED INTERFACE</p>
+                <h1>Conversation</h1>
+              </div>
               <span className="web-pill">{provider || 'agent'}</span>
             </header>
             {auth?.state !== 'authenticated' && (
               <section className="web-card web-auth-card">
                 <strong>{auth?.message || 'Codex authentication is required.'}</strong>
-                <button className="web-button primary" onClick={() => void login()} disabled={auth?.state === 'logging-in'}>{auth?.state === 'logging-in' ? 'Waiting for login…' : 'Sign in with ChatGPT'}</button>
-                {auth?.loginUrl && <a href={auth.loginUrl} target="_blank" rel="noreferrer">Open login page</a>}
+                <button
+                  className="web-button primary"
+                  onClick={() => void login()}
+                  disabled={auth?.state === 'logging-in'}
+                >
+                  {auth?.state === 'logging-in' ? 'Waiting for login…' : 'Sign in with ChatGPT'}
+                </button>
+                {auth?.loginUrl && (
+                  <a href={auth.loginUrl} target="_blank" rel="noreferrer">
+                    Open login page
+                  </a>
+                )}
                 {auth?.deviceCode && <p className="web-muted">Device code: {auth.deviceCode}</p>}
               </section>
             )}
             <div className="web-transcript">
               {!thread?.items.length ? (
-                <div className="web-welcome"><img src={logoUrl} alt="" /><h2>What would you like to build?</h2><p>Use the hosted Mused runtime to explore a workspace with live Codex streaming.</p></div>
+                <div className="web-welcome">
+                  <img src={logoUrl} alt="" />
+                  <h2>What would you like to build?</h2>
+                  <p>
+                    Use the hosted Mused runtime to explore a workspace with live Codex streaming.
+                  </p>
+                </div>
               ) : (
-                thread.items.map((entry) => <div className={'web-message ' + (entry.kind === 'userMessage' ? 'user' : 'agent')} key={entry.itemId}>{itemText(entry)}</div>)
+                thread.items.map((entry) => (
+                  <div
+                    className={'web-message ' + (entry.kind === 'userMessage' ? 'user' : 'agent')}
+                    key={entry.itemId}
+                  >
+                    {itemText(entry)}
+                  </div>
+                ))
               )}
             </div>
             <div className="web-composer">
-              <input className="web-workspace-input" value={workspaceRoot} onChange={(event) => setWorkspaceRoot(event.target.value)} placeholder="/srv/projects/your-repo" aria-label="Workspace path" />
-              <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder="Ask Mused to explore or plan a change…" onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void send() }
-              }} />
-              <button className="web-button primary" onClick={() => void send()} disabled={!prompt.trim() || !workspaceRoot.trim() || !connected}>Send</button>
+              <input
+                className="web-workspace-input"
+                value={workspaceRoot}
+                onChange={(event) => setWorkspaceRoot(event.target.value)}
+                placeholder="/srv/projects/your-repo"
+                aria-label="Workspace path"
+              />
+              <textarea
+                value={prompt}
+                onChange={(event) => setPrompt(event.target.value)}
+                placeholder="Ask Mused to explore or plan a change…"
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault()
+                    void send()
+                  }
+                }}
+              />
+              <button
+                className="web-button primary"
+                onClick={() => void send()}
+                disabled={!prompt.trim() || !workspaceRoot.trim() || !connected}
+              >
+                Send
+              </button>
             </div>
           </>
         ) : (
           <>
-            <header className="web-header"><div><p className="web-eyebrow">SELF-DEVELOPING ENVIRONMENT</p><h1>Change tasks</h1></div><span className="web-pill">isolated worktrees</span></header>
+            <header className="web-header">
+              <div>
+                <p className="web-eyebrow">SELF-DEVELOPING ENVIRONMENT</p>
+                <h1>Change tasks</h1>
+              </div>
+              <span className="web-pill">isolated worktrees</span>
+            </header>
             <div className="web-task-page">
               <section className="web-card web-task-form">
                 <h2>Request a controlled change</h2>
-                <p className="web-muted">Mused creates an isolated worktree, runs checks, and starts a preview before approval.</p>
-                <label className="web-label" htmlFor="repository-root">Repository path</label>
-                <input id="repository-root" value={repositoryRoot} onChange={(event) => setRepositoryRoot(event.target.value)} placeholder="/srv/projects/mused" />
-                <label className="web-label" htmlFor="task-prompt">What should change?</label>
-                <textarea id="task-prompt" value={taskPrompt} onChange={(event) => setTaskPrompt(event.target.value)} placeholder="Change how this button works…" />
-                <label className="web-label" htmlFor="check-command">Validation command</label>
-                <input id="check-command" value={checkCommand} onChange={(event) => setCheckCommand(event.target.value)} />
-                <button className="web-button primary" onClick={() => void createTask()} disabled={!connected}>Create isolated task</button>
+                <p className="web-muted">
+                  Mused creates an isolated worktree, runs checks, and starts a preview before
+                  approval.
+                </p>
+                <label className="web-label" htmlFor="repository-root">
+                  Repository path
+                </label>
+                <input
+                  id="repository-root"
+                  value={repositoryRoot}
+                  onChange={(event) => setRepositoryRoot(event.target.value)}
+                  placeholder="/srv/projects/mused"
+                />
+                <label className="web-label" htmlFor="task-prompt">
+                  What should change?
+                </label>
+                <textarea
+                  id="task-prompt"
+                  value={taskPrompt}
+                  onChange={(event) => setTaskPrompt(event.target.value)}
+                  placeholder="Change how this button works…"
+                />
+                <label className="web-label" htmlFor="check-command">
+                  Validation command
+                </label>
+                <input
+                  id="check-command"
+                  value={checkCommand}
+                  onChange={(event) => setCheckCommand(event.target.value)}
+                />
+                <button
+                  className="web-button primary"
+                  onClick={() => void createTask()}
+                  disabled={!connected}
+                >
+                  Create isolated task
+                </button>
               </section>
               <section className="web-task-list">
                 <p className="web-eyebrow">RECENT TASKS</p>
-                {tasks.length === 0 ? <p className="web-muted">No change tasks yet.</p> : tasks.map((task) => (
-                  <article className="web-task-card" key={task.id}>
-                    <div className="web-task-card-header"><strong>{task.prompt}</strong><span className="web-pill">{task.state}</span></div>
-                    <p className="web-muted">{task.repositoryRoot}</p>
-                    {task.worktreePath && <p className="web-task-path">{task.worktreePath}</p>}
-                    {task.preview.url && task.preview.status === 'ready' && <a href={task.preview.url} target="_blank" rel="noreferrer" className="web-button">Open live preview</a>}
-                    {task.state === 'requested' && <button className="web-button" onClick={() => void runTask(task)}>Plan, check, and preview</button>}
-                    {task.state === 'awaiting-approval' && <button className="web-button primary" onClick={() => void approveTask(task)}>Approve change</button>}
-                    {task.error && <p className="web-error">{task.error}</p>}
-                  </article>
-                ))}
+                {tasks.length === 0 ? (
+                  <p className="web-muted">No change tasks yet.</p>
+                ) : (
+                  tasks.map((task) => (
+                    <article className="web-task-card" key={task.id}>
+                      <div className="web-task-card-header">
+                        <strong>{task.prompt}</strong>
+                        <span className="web-pill">{task.state}</span>
+                      </div>
+                      <p className="web-muted">{task.repositoryRoot}</p>
+                      {task.worktreePath && <p className="web-task-path">{task.worktreePath}</p>}
+                      {task.preview.url && task.preview.status === 'ready' && (
+                        <a
+                          href={task.preview.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="web-button"
+                        >
+                          Open live preview
+                        </a>
+                      )}
+                      {task.state === 'requested' && (
+                        <button className="web-button" onClick={() => void runTask(task)}>
+                          Plan, check, and preview
+                        </button>
+                      )}
+                      {task.state === 'awaiting-approval' && (
+                        <button
+                          className="web-button primary"
+                          onClick={() => void approveTask(task)}
+                        >
+                          Approve change
+                        </button>
+                      )}
+                      {task.error && <p className="web-error">{task.error}</p>}
+                    </article>
+                  ))
+                )}
               </section>
             </div>
           </>
         )}
-        {error && <p className="web-error" role="alert">{error}</p>}
+        {error && (
+          <p className="web-error" role="alert">
+            {error}
+          </p>
+        )}
       </section>
     </main>
   )

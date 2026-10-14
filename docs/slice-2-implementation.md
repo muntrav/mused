@@ -8,7 +8,7 @@ The hosted runtime now launches the official Codex CLI app-server through a boun
 
 - codex app-server is started server-side only.
 - The transport performs the required initialize / initialized handshake.
-- thread/*, turn/*, item/*, and account notifications are normalized to the provider-neutral adapter contracts.
+- thread/_, turn/_, item/*, and account notifications are normalized to the provider-neutral adapter contracts.
 - Browser ChatGPT login uses account/login/start and exposes only a login URL/device code to the browser.
 - Codex tokens remain owned by the Codex runtime and are never copied into browser storage, Cloudflare settings, Git, or logs.
 - Approval and user-input requests remain explicit; Mused never auto-approves a Codex command or file change.

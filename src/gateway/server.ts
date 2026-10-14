@@ -6,7 +6,11 @@ import type { Duplex } from 'node:stream'
 import { WebSocketServer, WebSocket, type RawData } from 'ws'
 import type { AgentAdapter } from '../shared/agent/adapter'
 import { agentEventSchema } from '../shared/agent/protocol'
-import { ChangeTaskService, type ApprovedCheck, type PreviewInput } from '../main/workspaces/change-task-service'
+import {
+  ChangeTaskService,
+  type ApprovedCheck,
+  type PreviewInput,
+} from '../main/workspaces/change-task-service'
 import { ChangeTaskStore } from '../main/workspaces/change-task-store'
 import type { ChangeRisk } from '../shared/change-task'
 import { gatewayRequestSchema, type GatewayEvent, type GatewayRequest } from './protocol'
@@ -235,7 +239,11 @@ export class GatewayServer {
     if (request.action === 'auth-status')
       return this.respond(client, request.requestId, await this.agent.auth.status())
     if (request.action === 'login')
-      return this.respond(client, request.requestId, await this.agent.auth.login(input?.method === 'device' ? 'device' : 'browser'))
+      return this.respond(
+        client,
+        request.requestId,
+        await this.agent.auth.login(input?.method === 'device' ? 'device' : 'browser'),
+      )
     if (request.action === 'cancel-login') {
       await this.agent.auth.cancelLogin()
       return this.respond(client, request.requestId, await this.agent.auth.status())
