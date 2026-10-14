@@ -137,6 +137,8 @@ export class GatewayServer {
           agentAvailable: true,
         })
       }
+      if (request.method === 'POST' && url.pathname === '/api/setup/passcode')
+        return this.setupPasscode(request, response)
       if (request.method === 'POST' && url.pathname === '/api/auth/login')
         return this.login(request, response)
       if (request.method === 'GET' && url.pathname === '/api/session') {
@@ -172,6 +174,68 @@ export class GatewayServer {
         error: message,
       })
     }
+  }
+
+  private async setupPasscode(request: IncomingMessage, response: ServerResponse) {
+    if (!this.setupTokenFile || !this.secretFile)
+      return this.json(response, 404, { error: 'Passcode setup is not enabled.' })
+
+    let setup: { token?: string; expiresAt?: number }
+    try {
+      setup = JSON.parse((await readFile(this.setupTokenFile, 'utf8')).trim()) as typeof setup
+    } catch {
+      return this.json(response, 410, { error: 'This setup link is no longer available.' })
+    }
+    if (
+      typeof setup.token !== 'string' ||
+      typeof setup.expiresAt !== 'number' ||
+      Date.now() > setup.expiresAt
+    ) {
+      await unlink(this.setupTokenFile).catch(() => undefined)
+      return this.json(response, 410, { error: 'This setup link has expired.' })
+    }
+
+    const input = JSON.parse(await readBody(request)) as {
+      setupToken?: unknown
+      passcode?: unknown
+    }
+    if (
+      typeof input.setupToken !== 'string' ||
+      !safeEqual(input.setupToken, Buffer.from(setup.token))
+    )
+      return this.json(response, 401, { error: 'Invalid setup link.' })
+    if (
+      typeof input.passcode !== 'string' ||
+      input.passcode.length < 12 ||
+      input.passcode.length > 256
+    )
+      return this.json(response, 400, {
+        error: 'Use a passcode between 12 and 256 characters.',
+      })
+
+    await this.persistSecret(input.passcode)
+    this.token = Buffer.from(input.passcode)
+    await unlink(this.setupTokenFile).catch(() => undefined)
+    this.sessions.clear()
+    return this.json(response, 200, { configured: true })
+  }
+
+  private async loadPersistedSecret() {
+    if (!this.secretFile) return
+    try {
+      const stored = (await readFile(this.secretFile, 'utf8')).trim()
+      if (stored.length >= 12) this.token = Buffer.from(stored)
+    } catch {
+      // The environment bootstrap secret remains active until setup completes.
+    }
+  }
+
+  private async persistSecret(secret: string) {
+    if (!this.secretFile) throw new Error('Passcode persistence is not configured.')
+    await mkdir(dirname(this.secretFile), { recursive: true, mode: 0o700 })
+    const temporary = `${this.secretFile}.${randomUUID()}.tmp`
+    await writeFile(temporary, `${secret}\n`, { mode: 0o600 })
+    await rename(temporary, this.secretFile)
   }
 
   private async login(request: IncomingMessage, response: ServerResponse) {
@@ -473,14 +537,20 @@ export class GatewayServer {
     const path = normalize(join(this.staticRoot, relative))
     if (!isPathInside(this.staticRoot, path))
       return this.json(response, 404, { error: 'not_found' })
-    try {
-      const content = await readFile(path)
-      response.statusCode = 200
-      response.setHeader('Content-Type', contentType(extname(path)))
-      response.end(content)
-    } catch {
-      return this.json(response, 404, { error: 'not_found' })
+    const candidates = [path]
+    if (!extname(pathname)) candidates.push(join(this.staticRoot, 'index.html'))
+    for (const candidate of candidates) {
+      try {
+        const content = await readFile(candidate)
+        response.statusCode = 200
+        response.setHeader('Content-Type', contentType(extname(candidate)))
+        response.end(content)
+        return
+      } catch {
+        // Try the SPA entrypoint for routes such as /setup.
+      }
     }
+    return this.json(response, 404, { error: 'not_found' })
   }
 
   private json(response: ServerResponse, status: number, body: unknown) {
