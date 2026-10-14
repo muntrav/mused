@@ -1,8 +1,10 @@
 import type { ChangeRisk } from '../../shared/change-task'
 import { ChangeTaskStore } from './change-task-store'
+import { PreviewManager, type PreviewDescriptor } from './preview-manager'
 import { WorktreeManager, type WorkspaceDescriptor } from './worktree-manager'
 
 export type ApprovedCheck = { name: string; command: string; args?: string[]; timeout?: number }
+export type PreviewInput = { command?: string; args?: string[]; port?: number; healthPath?: string }
 
 export class ChangeTaskService {
   private readonly workspaces = new Map<string, WorkspaceDescriptor>()
@@ -10,21 +12,13 @@ export class ChangeTaskService {
   constructor(
     readonly store = new ChangeTaskStore(),
     private readonly worktreeManager = new WorktreeManager(),
+    private readonly previews = new PreviewManager(),
   ) {}
 
-  async create(input: {
-    repositoryRoot: string
-    prompt: string
-    risk?: ChangeRisk
-    baseRef?: string
-  }) {
+  async create(input: { repositoryRoot: string; prompt: string; risk?: ChangeRisk; baseRef?: string }) {
     const task = this.store.create(input)
     try {
-      const workspace = await this.worktreeManager.create(
-        input.repositoryRoot,
-        task.id,
-        input.baseRef,
-      )
+      const workspace = await this.worktreeManager.create(input.repositoryRoot, task.id, input.baseRef)
       this.workspaces.set(task.id, workspace)
       return this.store.update(task.id, {
         worktreePath: workspace.worktreePath,
@@ -44,7 +38,7 @@ export class ChangeTaskService {
     return this.store.transition(taskId, 'editing')
   }
 
-  async runChecks(taskId: string, checks: ApprovedCheck[]) {
+  async runChecks(taskId: string, checks: ApprovedCheck[], preview?: PreviewInput) {
     const task = this.store.get(taskId)
     if (task.state !== 'editing')
       throw new Error('A task must have an editing plan before checks run.')
@@ -62,28 +56,41 @@ export class ChangeTaskService {
           },
         ],
       })
-      const result = await this.worktreeManager.run(
-        workspace,
-        check.command,
-        check.args,
-        check.timeout,
-      )
+      const result = await this.worktreeManager.run(workspace, check.command, check.args, check.timeout)
       results.push({
         name: check.name,
         command: [check.command, ...(check.args ?? [])].join(' '),
         status: result.exitCode === 0 ? ('passed' as const) : ('failed' as const),
-        output: `${result.stdout}${result.stderr ? `\n${result.stderr}` : ''}`.slice(0, 200000),
+        output: (result.stdout + (result.stderr ? '\n' + result.stderr : '')).slice(0, 200000),
         exitCode: result.exitCode,
       })
       this.store.update(taskId, { checks: [...results] })
       if (result.exitCode !== 0)
-        return this.store.transition(taskId, 'failed', { error: `${check.name} failed.` })
+        return this.store.transition(taskId, 'failed', { error: check.name + ' failed.' })
     }
     const changedFiles = await this.worktreeManager.changedFiles(workspace)
     this.store.update(taskId, { changedFiles })
     this.store.transition(taskId, 'previewing', {
-      preview: { status: 'not-started', message: 'Live preview is provided by Phase C2.' },
+      preview: { status: 'starting', message: 'Starting an isolated live preview.' },
     })
+    if (preview) {
+      try {
+        const descriptor = await this.previews.start(workspace, preview)
+        this.store.update(taskId, {
+          preview: { status: 'ready', url: descriptor.url, message: 'Preview is live.' },
+        })
+      } catch (error) {
+        await this.previews.stop(taskId)
+        return this.store.transition(taskId, 'failed', {
+          error: error instanceof Error ? error.message : String(error),
+          preview: { status: 'unhealthy', message: 'Preview failed to start.' },
+        })
+      }
+    } else {
+      this.store.update(taskId, {
+        preview: { status: 'not-started', message: 'No preview command was supplied.' },
+      })
+    }
     return this.store.transition(taskId, 'awaiting-approval')
   }
 
@@ -99,12 +106,27 @@ export class ChangeTaskService {
     const task = this.store.get(taskId)
     if (!['applied', 'reverted', 'failed', 'cancelled'].includes(task.state))
       this.store.transition(taskId, 'cancelled')
+    await this.previews.stop(taskId)
     const workspace = this.workspaces.get(taskId)
     if (workspace) {
       await this.worktreeManager.remove(workspace)
       this.workspaces.delete(taskId)
     }
     return this.store.get(taskId)
+  }
+
+  preview(taskId: string): PreviewDescriptor {
+    const preview = this.previews.get(taskId)
+    if (!preview) throw new Error('This task has no active preview.')
+    return preview
+  }
+
+  proxyPreview(
+    taskId: string,
+    request: Parameters<PreviewManager['proxy']>[1],
+    response: Parameters<PreviewManager['proxy']>[2],
+  ) {
+    return this.previews.proxy(taskId, request, response)
   }
 
   workspace(taskId: string) {
