@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import { timingSafeEqual, randomUUID } from 'node:crypto'
-import { readFile } from 'node:fs/promises'
-import { extname, join, normalize } from 'node:path'
+import { mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises'
+import { dirname, extname, join, normalize } from 'node:path'
 import type { Duplex } from 'node:stream'
 import { WebSocketServer, WebSocket, type RawData } from 'ws'
 import type { AgentAdapter } from '../shared/agent/adapter'
@@ -33,6 +33,8 @@ export type GatewayServerOptions = {
   allowWorkspaceExecution?: boolean
   staticRoot?: string
   secureCookies?: boolean
+  secretFile?: string
+  setupTokenFile?: string
 }
 
 type Client = { socket: WebSocket; sessionId: string; seq: number }
@@ -45,7 +47,9 @@ export class GatewayServer {
   })
   private readonly clients = new Set<Client>()
   private readonly sessions = new Map<string, number>()
-  private readonly token: Buffer
+  private token: Buffer
+  private readonly secretFile?: string
+  private readonly setupTokenFile?: string
   private readonly host: string
   private readonly port: number
   private readonly agent: AgentAdapter
@@ -75,6 +79,8 @@ export class GatewayServer {
     this.staticRoot = options.staticRoot
     this.secureCookies = options.secureCookies ?? false
     this.token = Buffer.from(options.bootstrapSecret)
+    this.secretFile = options.secretFile
+    this.setupTokenFile = options.setupTokenFile
     this.agentUnsubscribe = this.agent.subscribe((event) => {
       const parsed = agentEventSchema.parse(event)
       this.broadcast({ type: 'event', seq: 0, event: parsed })
@@ -87,7 +93,8 @@ export class GatewayServer {
     this.wss.on('connection', (socket, request) => this.handleConnection(socket, request))
   }
 
-  listen() {
+  async listen() {
+    await this.loadPersistedSecret()
     return new Promise<{ host: string; port: number }>((resolve, reject) => {
       const onError = (error: Error) => {
         this.server.off('listening', onListening)
