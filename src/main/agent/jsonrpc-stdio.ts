@@ -7,7 +7,8 @@ const requestSchema = z.object({
   params: z.unknown().optional(),
 })
 const responseSchema = z.object({
-  jsonrpc: z.literal('2.0'),
+  // Codex app-server omits the optional JSON-RPC version field on response envelopes.
+  jsonrpc: z.literal('2.0').optional(),
   id: z.union([z.string(), z.number()]),
   result: z.unknown().optional(),
   error: z
