@@ -5,6 +5,7 @@ import {
   providerIdSchema,
 } from "../shared/agent/protocol";
 import { changeTaskSchema } from "../shared/change-task";
+import { selfUpdateRecordSchema } from "../shared/self-development";
 
 export const gatewayRequestSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("ping"), requestId: z.string().min(1).max(100) }),
