@@ -23,7 +23,21 @@ export const gatewayRequestSchema = z.discriminatedUnion('type', [
       'login',
       'cancel-login',
       'logout',
+      'list-models',
+      'rename-thread',
+      'set-model',
+      'compact-thread',
+      'read-output',
+      'approve',
+      'answer',
+      'cancel-question',
     ]),
+    input: z.unknown().optional(),
+  }),
+  z.object({
+    type: z.literal('workspace'),
+    requestId: z.string().min(1).max(100),
+    action: z.enum(['git-status', 'git-diff', 'list-files', 'read-file']),
     input: z.unknown().optional(),
   }),
   z.object({
@@ -76,6 +90,19 @@ export type GatewayRequestInput =
         | 'login'
         | 'cancel-login'
         | 'logout'
+        | 'list-models'
+        | 'rename-thread'
+        | 'set-model'
+        | 'compact-thread'
+        | 'read-output'
+        | 'approve'
+        | 'answer'
+        | 'cancel-question'
+      input?: unknown
+    }
+  | {
+      type: 'workspace'
+      action: 'git-status' | 'git-diff' | 'list-files' | 'read-file'
       input?: unknown
     }
   | {
