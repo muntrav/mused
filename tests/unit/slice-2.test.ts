@@ -5,26 +5,25 @@ import { changeTaskSchema } from '../../src/shared/change-task'
 
 describe('Slice 2 hosted contracts', () => {
   it('accepts Codex auth and live preview gateway requests', () => {
-    expect(
-      gatewayRequestSchema.parse({
-        type: 'agent',
-        requestId: 'auth-1',
-        action: 'login',
-        input: { method: 'browser' },
-      }).action,
-    ).toBe('login')
-    expect(
-      gatewayRequestSchema.parse({
-        type: 'task',
-        requestId: 'preview-1',
-        action: 'check',
-        input: {
-          taskId: 'task-1',
-          checks: [],
-          preview: { command: 'npm', args: ['run', 'web:dev'] },
-        },
-      }).action,
-    ).toBe('check')
+    const authRequest = gatewayRequestSchema.parse({
+      type: 'agent',
+      requestId: 'auth-1',
+      action: 'login',
+      input: { method: 'browser' },
+    })
+    expect(authRequest).toMatchObject({ type: 'agent', action: 'login' })
+
+    const previewRequest = gatewayRequestSchema.parse({
+      type: 'task',
+      requestId: 'preview-1',
+      action: 'check',
+      input: {
+        taskId: 'task-1',
+        checks: [],
+        preview: { command: 'npm', args: ['run', 'web:dev'] },
+      },
+    })
+    expect(previewRequest).toMatchObject({ type: 'task', action: 'check' })
   })
 
   it('allows a gateway-relative preview URL', () => {
