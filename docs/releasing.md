@@ -1,6 +1,6 @@
 # Building and releasing
 
-Muse Desktop is an **unofficial** project maintained by Robert Courson. Keep the affiliation notice in app metadata, release notes, and redistribution notices.
+Mused is an **unofficial** community project maintained in this repository. Keep the affiliation notice in app metadata, release notes, and redistribution notices.
 
 ## Local builds
 
