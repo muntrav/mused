@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { App as DesktopApp } from '../renderer/src/App'
 import { GatewayClient } from './gateway-client'
+import { createWebDesktopAPI } from './desktop-api'
 
 const accessClient = new GatewayClient()
 
