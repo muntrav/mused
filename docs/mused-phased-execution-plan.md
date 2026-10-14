@@ -12,11 +12,11 @@
 The work is divided into three related workstreams. Each workstream has three phases,
 for nine phases total.
 
-| Workstream | Phase 1 | Phase 2 | Phase 3 |
-|---|---|---|---|
-| Provider-neutral reusable adapter layer | Define contracts and isolate the current Muse host | Implement the Codex adapter and auth lifecycle | Harden, version, package, and prove provider parity |
-| Browser-based hosted interface | Build the authenticated browser shell and remote gateway | Connect live agent sessions and hosted workspaces | Harden hosting, recovery, scaling, and release operations |
-| Self-developing coding environment | Build the workspace/task/change pipeline | Add live preview, hot reload, and feedback loops | Add approval-gated self-updates, rollback, and production promotion |
+| Workstream                              | Phase 1                                                  | Phase 2                                           | Phase 3                                                             |
+| --------------------------------------- | -------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------- |
+| Provider-neutral reusable adapter layer | Define contracts and isolate the current Muse host       | Implement the Codex adapter and auth lifecycle    | Harden, version, package, and prove provider parity                 |
+| Browser-based hosted interface          | Build the authenticated browser shell and remote gateway | Connect live agent sessions and hosted workspaces | Harden hosting, recovery, scaling, and release operations           |
+| Self-developing coding environment      | Build the workspace/task/change pipeline                 | Add live preview, hot reload, and feedback loops  | Add approval-gated self-updates, rollback, and production promotion |
 
 The dependency order is important:
 
@@ -737,13 +737,13 @@ review, and human control.
 
 #### Approval policy
 
-| Change class | Preview allowed | Auto-apply | Human approval before promotion |
-|---|---:|---:|---:|
-| Renderer styling or copy | Yes | No by default | Yes |
-| Renderer behavior | Yes | No | Yes |
-| Main/preload process | Yes, with restart | No | Yes |
-| Auth, gateway, permissions | Yes, isolated only | Never | Explicit approval and security review |
-| Deployment, DNS, secrets, deletion | Staged only | Never | Explicit separate approval |
+| Change class                       |    Preview allowed |    Auto-apply |       Human approval before promotion |
+| ---------------------------------- | -----------------: | ------------: | ------------------------------------: |
+| Renderer styling or copy           |                Yes | No by default |                                   Yes |
+| Renderer behavior                  |                Yes |            No |                                   Yes |
+| Main/preload process               |  Yes, with restart |            No |                                   Yes |
+| Auth, gateway, permissions         | Yes, isolated only |         Never | Explicit approval and security review |
+| Deployment, DNS, secrets, deletion |        Staged only |         Never |            Explicit separate approval |
 
 #### Deliverables
 
@@ -787,12 +787,12 @@ approval, and recover to the previous version if the change fails.
 
 The three workstreams share one operational boundary:
 
-| Workload | Location | Rule |
-| --- | --- | --- |
-| Source, CI checks, packaging, and release artifacts | GitHub Actions | Build from an exact commit; keep credentials in protected secrets. |
-| Browser UI and public preview | Cloudflare Pages | Deploy only verified commits; never fall back to a public localhost API. |
-| Edge authentication and routing | Cloudflare Access/Workers or private Tunnel | Do not expose provider ports or provider credentials to the browser. |
-| Persistent agent sessions and coding workspaces | Protected VPS | Isolate sessions, cap resources, clean up idle work, and preserve an operator recovery path. |
+| Workload                                            | Location                                    | Rule                                                                                         |
+| --------------------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Source, CI checks, packaging, and release artifacts | GitHub Actions                              | Build from an exact commit; keep credentials in protected secrets.                           |
+| Browser UI and public preview                       | Cloudflare Pages                            | Deploy only verified commits; never fall back to a public localhost API.                     |
+| Edge authentication and routing                     | Cloudflare Access/Workers or private Tunnel | Do not expose provider ports or provider credentials to the browser.                         |
+| Persistent agent sessions and coding workspaces     | Protected VPS                               | Isolate sessions, cap resources, clean up idle work, and preserve an operator recovery path. |
 
 The VPS is part of the runtime plane, not the source-of-truth or release-build plane. A workspace may execute builds and dev servers when live feedback requires it, but release artifacts must be produced and verified through the GitHub/Cloudflare workflow before being promoted.
 
