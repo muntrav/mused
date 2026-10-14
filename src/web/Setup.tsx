@@ -10,7 +10,9 @@ export function Setup() {
   const [confirmation, setConfirmation] = useState('')
   const [message, setMessage] = useState('')
   const [complete, setComplete] = useState(false)
-  const params = new URLSearchParams(window.location.search)\n  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))\n  const token = params.get('token') ?? hashParams.get('token') ?? ''
+  const params = new URLSearchParams(window.location.search)
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+  const token = params.get('token') ?? hashParams.get('token') ?? ''
 
   const submit = async () => {
     setMessage('')
