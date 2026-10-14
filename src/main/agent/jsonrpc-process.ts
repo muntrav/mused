@@ -1,5 +1,5 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
-import { JsonRpcLineDecoder, encodeJsonRpc, type JsonRpcMessage, type JsonRpcNotification, type JsonRpcRequest, type JsonRpcResponse } from './jsonrpc-stdio'
+import { JsonRpcLineDecoder, encodeJsonRpc, type JsonRpcMessage, type JsonRpcNotification, type JsonRpcRequest } from './jsonrpc-stdio'
 
 type Pending = {
   resolve: (value: unknown) => void
@@ -112,7 +112,7 @@ export class JsonRpcProcess {
       else pending.resolve(message.result)
       return
     }
-    if ('method' in message) options.onNotification?.(message)
+    if (!('id' in message)) options.onNotification?.(message as JsonRpcNotification)
   }
 
   private fail(error: Error) {

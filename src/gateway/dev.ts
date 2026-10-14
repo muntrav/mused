@@ -19,7 +19,7 @@ const allowedWorkspaceRoots = (process.env.MUSED_ALLOWED_WORKSPACE_ROOTS ?? '')
   .split(',')
   .map((entry) => entry.trim())
   .filter(Boolean)
-  .map(resolve)
+  .map((entry) => resolve(entry))
 
 const taskService = new ChangeTaskService()
 await agent.connect()
