@@ -1,6 +1,6 @@
 # Contributing
 
-This unofficial project is created and maintained by [Robert Courson (@robzilla1738)](https://github.com/robzilla1738). Meta does not maintain or support it. Robert is the sole initial contributor and code owner. Third-party dependency and asset credits remain in NOTICE.md.
+The Mused project is maintained in this repository. Meta does not maintain or support it. Third-party dependency and asset credits remain in NOTICE.md.
 
 Use Node.js 22.12+ on macOS, Windows, or Linux and run `npm ci`. Start the app with `npm run dev`. Install Muse Code separately when working on the integration.
 
