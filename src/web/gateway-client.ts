@@ -23,6 +23,24 @@ export class GatewayClient {
     if (!response.ok) throw new Error('Login failed. Check the access code and try again.')
   }
 
+  async setupPasscode(setupToken: string, passcode: string) {
+    const response = await fetch('/api/setup/passcode', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ setupToken, passcode }),
+    })
+    if (!response.ok) {
+      let message = 'Could not create the Mused passcode.'
+      try {
+        const body = (await response.json()) as { error?: string }
+        if (body.error) message = body.error
+      } catch {
+        // Keep the safe generic message when the response is not JSON.
+      }
+      throw new Error(message)
+    }
+  }
+
   async session() {
     const response = await fetch('/api/session', { credentials: 'include' })
     return response.ok
