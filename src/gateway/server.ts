@@ -274,7 +274,11 @@ export class GatewayServer {
         return this.respond(client, request.requestId, { subscribed: true });
       if (request.type === "agent")
         return this.handleAgentRequest(client, request);
-      return this.handleTaskRequest(client, request);
+      if (request.type === "task")
+        return this.handleTaskRequest(client, request);
+      if (request.type === "self-update")
+        return this.handleSelfUpdateRequest(client, request);
+      throw new Error("Unsupported gateway request.");
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Invalid gateway request.";
