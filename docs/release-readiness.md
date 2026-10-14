@@ -2,7 +2,7 @@
 
 Verified October 13, 2026, on Apple Silicon with Muse Code 1.4.7 and SDK 1.4.7. Targets: macOS 13+ (Apple Silicon and Intel), Windows 10/11 (x64 and arm64), and Linux (x64 and arm64).
 
-[Public source and downloads](https://github.com/muntrav/mused/releases/tag/v0.2.0) are maintained by Robert Courson (@robzilla1738), the sole initial contributor and code owner. This is an **unofficial** community companion, not a Meta product. Private vulnerability reporting, secret scanning, push protection, and main-branch deletion/force-push protection are enabled.
+[Public source and downloads](https://github.com/muntrav/mused/releases/tag/v0.2.0) are published in the Mused repository. This is an **unofficial** community companion, not a Meta product. Private vulnerability reporting, secret scanning, push protection, and main-branch deletion/force-push protection are enabled.
 
 ## Distribution
 
