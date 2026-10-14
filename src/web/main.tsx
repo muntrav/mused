@@ -4,7 +4,5 @@ import { App } from './App'
 import { Setup } from './Setup'
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    {window.location.pathname === '/setup' ? <Setup /> : <App />}
-  </StrictMode>,
+  <StrictMode>{window.location.pathname === '/setup' ? <Setup /> : <App />}</StrictMode>,
 )
