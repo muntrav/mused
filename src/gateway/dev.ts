@@ -55,6 +55,8 @@ const gateway = new GatewayServer({
   allowWorkspaceExecution: process.env.MUSED_ALLOW_WORKSPACE_EXECUTION === 'true',
   staticRoot: resolve('dist/web'),
   secureCookies: process.env.NODE_ENV === 'production',
+  secretFile: process.env.MUSED_GATEWAY_SECRET_FILE,
+  setupTokenFile: process.env.MUSED_SETUP_TOKEN_FILE,
 })
 
 const address = await gateway.listen()
