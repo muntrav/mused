@@ -15,7 +15,8 @@ const responseSchema = z.object({
     .optional(),
 })
 const notificationSchema = z.object({
-  jsonrpc: z.literal('2.0'),
+  // Codex app-server emits some server notifications without the optional JSON-RPC version field.
+  jsonrpc: z.literal('2.0').optional(),
   method: z.string().min(1),
   params: z.unknown().optional(),
 })
