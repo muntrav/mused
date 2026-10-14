@@ -21,8 +21,8 @@ export function WorkspacePicker({
     <Dialog title="Choose a project" onClose={onClose} className="workspace-picker-dialog">
       <div className="workspace-picker">
         <p className="workspace-picker-copy">
-          Choose a connected project before starting a conversation. Mused keeps the server path
-          private to the workspace runtime.
+          Choose a connected project before starting a conversation. Server workspace paths stay
+          private to the runtime.
         </p>
         {loading && <p className="workspace-picker-empty">Loading available projects…</p>}
         {!loading && error && <p className="workspace-picker-error">{error}</p>}
@@ -46,7 +46,7 @@ export function WorkspacePicker({
                 </span>
                 <span className="workspace-picker-option-copy">
                   <strong>{project.name}</strong>
-                  <span>{project.path}</span>
+                  <span>Connected hosted project</span>
                 </span>
               </button>
             ))}
