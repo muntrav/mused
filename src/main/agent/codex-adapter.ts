@@ -135,6 +135,7 @@ export class CodexAdapter implements AgentAdapter {
     state: 'closed',
     reconnectable: true,
   }
+  private loginId?: string
   private authState: AuthStatus = {
     provider,
     state: 'required',
@@ -256,6 +257,7 @@ export class CodexAdapter implements AgentAdapter {
         : {
             threadId: input.threadId,
             input: [{ type: 'text', text: input.text }],
+            cwd: this.views.get(input.threadId)?.thread.workspaceRoot ?? undefined,
             effort: input.effort,
           }
     await this.call(method, params)
@@ -339,6 +341,7 @@ export class CodexAdapter implements AgentAdapter {
     const result = (await this.call('account/login/start', {
       type: method === 'device' ? 'chatgptDeviceCode' : 'chatgpt',
     })) as Record<string, unknown>
+    this.loginId = stringValue(result.loginId) || undefined
     this.authState = {
       provider,
       state: 'logging-in',
@@ -354,14 +357,15 @@ export class CodexAdapter implements AgentAdapter {
   }
 
   async cancelLogin() {
-    const loginId = this.authState.loginUrl
-    if (loginId) await this.call('account/login/cancel', { loginId })
+    if (this.loginId) await this.call('account/login/cancel', { loginId: this.loginId })
+    this.loginId = undefined
     this.authState = { provider, state: 'required', message: 'Codex login was cancelled.' }
     this.publish({ type: 'auth', status: this.authState })
   }
 
   async logout() {
     await this.call('account/logout')
+    this.loginId = undefined
     this.authState = { provider, state: 'required', message: 'Signed out of Codex.' }
     this.publish({ type: 'auth', status: this.authState })
   }
