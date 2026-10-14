@@ -21,6 +21,18 @@ export interface PromotionProvider {
   rollback(input: PromotionInput): Promise<PromotionReceipt>
 }
 
+export class UnconfiguredPromotionProvider implements PromotionProvider {
+  readonly name = 'unconfigured'
+
+  async promote(): Promise<PromotionReceipt> {
+    throw new Error('Promotion is not configured. Set the protected GitHub Actions credentials.')
+  }
+
+  async rollback(): Promise<PromotionReceipt> {
+    throw new Error('Rollback is not configured. Set the protected GitHub Actions credentials.')
+  }
+}
+
 export class MemoryPromotionProvider implements PromotionProvider {
   readonly name = 'memory'
   readonly calls: PromotionInput[] = []
