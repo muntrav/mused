@@ -3,6 +3,11 @@ import { FakeAgentAdapter } from '../main/agent/fake-adapter'
 import { resolve } from 'node:path'
 import { ChangeTaskService } from '../main/workspaces/change-task-service'
 import { GatewayServer } from './server'
+import { createFileBackedSelfDevelopment } from '../main/self-development/service'
+import {
+  GitHubActionsPromotionProvider,
+  UnconfiguredPromotionProvider,
+} from '../main/self-development/promotion'
 
 const secret = process.env.MUSED_GATEWAY_SECRET
 if (!secret) throw new Error('Set MUSED_GATEWAY_SECRET before starting the gateway.')
@@ -24,11 +29,27 @@ const allowedWorkspaceRoots = (process.env.MUSED_ALLOWED_WORKSPACE_ROOTS ?? '')
 const taskService = new ChangeTaskService()
 await agent.connect()
 
+const promotionProvider = process.env.MUSED_GITHUB_TOKEN
+  ? new GitHubActionsPromotionProvider({
+      token: process.env.MUSED_GITHUB_TOKEN,
+      owner: process.env.MUSED_GITHUB_OWNER ?? 'muntrav',
+      repo: process.env.MUSED_GITHUB_REPO ?? 'mused',
+      workflow: process.env.MUSED_GITHUB_WORKFLOW ?? 'self-update.yml',
+      runUrlBase: process.env.MUSED_GITHUB_URL ?? 'https://github.com/muntrav/mused',
+    })
+  : new UnconfiguredPromotionProvider()
+const selfDevelopment = createFileBackedSelfDevelopment(
+  resolve(process.env.MUSED_SELF_UPDATE_STORE ?? '.mused/self-updates.json'),
+  resolve(process.env.MUSED_SELF_UPDATE_AUDIT ?? '.mused/self-update-audit.json'),
+  promotionProvider,
+)
+
 const gateway = new GatewayServer({
   port: Number(process.env.MUSED_GATEWAY_PORT ?? 8787),
   bootstrapSecret: secret,
   agent,
   taskService,
+  selfDevelopment,
   allowedOrigins: process.env.MUSED_GATEWAY_ORIGIN ? [process.env.MUSED_GATEWAY_ORIGIN] : [],
   allowedWorkspaceRoots,
   allowWorkspaceExecution: process.env.MUSED_ALLOW_WORKSPACE_EXECUTION === 'true',

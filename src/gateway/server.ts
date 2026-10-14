@@ -14,6 +14,7 @@ import {
 import { ChangeTaskStore } from '../main/workspaces/change-task-store'
 import type { ChangeRisk } from '../shared/change-task'
 import { gatewayRequestSchema, type GatewayEvent, type GatewayRequest } from './protocol'
+import { SelfDevelopmentService } from '../main/self-development/service'
 
 const MAX_BODY_BYTES = 64 * 1024
 const MAX_MESSAGE_BYTES = 1024 * 1024
@@ -26,6 +27,7 @@ export type GatewayServerOptions = {
   agent: AgentAdapter
   taskStore?: ChangeTaskStore
   taskService?: ChangeTaskService
+  selfDevelopment?: SelfDevelopmentService
   allowedOrigins?: string[]
   allowedWorkspaceRoots?: string[]
   allowWorkspaceExecution?: boolean
@@ -37,7 +39,10 @@ type Client = { socket: WebSocket; sessionId: string; seq: number }
 
 export class GatewayServer {
   private readonly server: Server
-  private readonly wss = new WebSocketServer({ noServer: true, maxPayload: MAX_MESSAGE_BYTES })
+  private readonly wss = new WebSocketServer({
+    noServer: true,
+    maxPayload: MAX_MESSAGE_BYTES,
+  })
   private readonly clients = new Set<Client>()
   private readonly sessions = new Map<string, number>()
   private readonly token: Buffer
@@ -46,6 +51,7 @@ export class GatewayServer {
   private readonly agent: AgentAdapter
   private readonly tasks: ChangeTaskStore
   private readonly taskService: ChangeTaskService
+  private readonly selfDevelopment: SelfDevelopmentService
   private readonly allowedOrigins: Set<string>
   private readonly allowedWorkspaceRoots: string[]
   private readonly allowWorkspaceExecution: boolean
@@ -62,6 +68,7 @@ export class GatewayServer {
     this.agent = options.agent
     this.tasks = options.taskStore ?? new ChangeTaskStore()
     this.taskService = options.taskService ?? new ChangeTaskService(this.tasks)
+    this.selfDevelopment = options.selfDevelopment ?? new SelfDevelopmentService()
     this.allowedOrigins = new Set(options.allowedOrigins ?? [])
     this.allowedWorkspaceRoots = options.allowedWorkspaceRoots ?? []
     this.allowWorkspaceExecution = options.allowWorkspaceExecution ?? this.agent.provider === 'fake'
@@ -214,11 +221,17 @@ export class GatewayServer {
         throw new Error('Message exceeds the 1 MB limit.')
       const request = gatewayRequestSchema.parse(JSON.parse(message))
       if (request.type === 'ping')
-        return this.send(client, { type: 'pong', seq: 0, requestId: request.requestId })
+        return this.send(client, {
+          type: 'pong',
+          seq: 0,
+          requestId: request.requestId,
+        })
       if (request.type === 'subscribe')
         return this.respond(client, request.requestId, { subscribed: true })
       if (request.type === 'agent') return this.handleAgentRequest(client, request)
-      return this.handleTaskRequest(client, request)
+      if (request.type === 'task') return this.handleTaskRequest(client, request)
+      if (request.type === 'self-update') return this.handleSelfUpdateRequest(client, request)
+      throw new Error('Unsupported gateway request.')
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Invalid gateway request.'
       this.send(client, {
@@ -347,6 +360,63 @@ export class GatewayServer {
     if (request.action === 'approve')
       return this.respond(client, request.requestId, this.taskService.approve(taskId))
     return this.respond(client, request.requestId, await this.taskService.cancel(taskId))
+  }
+
+  private async handleSelfUpdateRequest(
+    client: Client,
+    request: Extract<GatewayRequest, { type: 'self-update' }>,
+  ) {
+    const input = request.input as Record<string, unknown> | undefined
+    const actor = client.sessionId
+    if (request.action === 'list')
+      return this.respond(client, request.requestId, await this.selfDevelopment.list())
+    if (request.action === 'get')
+      return this.respond(
+        client,
+        request.requestId,
+        await this.selfDevelopment.get(String(input?.updateId ?? '')),
+      )
+    if (request.action === 'audit')
+      return this.respond(
+        client,
+        request.requestId,
+        await this.selfDevelopment.auditTrail(String(input?.updateId ?? '')),
+      )
+    if (request.action === 'propose')
+      return this.respond(
+        client,
+        request.requestId,
+        await this.selfDevelopment.propose(input as never, actor),
+      )
+    if (request.action === 'approve')
+      return this.respond(
+        client,
+        request.requestId,
+        await this.selfDevelopment.approve(String(input?.updateId ?? ''), actor),
+      )
+    if (request.action === 'promote')
+      return this.respond(
+        client,
+        request.requestId,
+        await this.selfDevelopment.promote(String(input?.updateId ?? ''), actor),
+      )
+    if (request.action === 'verify')
+      return this.respond(
+        client,
+        request.requestId,
+        await this.selfDevelopment.verify(String(input?.updateId ?? ''), actor),
+      )
+    if (request.action === 'rollback')
+      return this.respond(
+        client,
+        request.requestId,
+        await this.selfDevelopment.rollback(String(input?.updateId ?? ''), actor),
+      )
+    return this.respond(
+      client,
+      request.requestId,
+      await this.selfDevelopment.cancel(String(input?.updateId ?? ''), actor),
+    )
   }
 
   private respond(client: Client, requestId: string, value: unknown) {
