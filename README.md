@@ -1,18 +1,22 @@
-# Muse Desktop · Unofficial
+# Mused
 
-[![Checks](https://github.com/robzilla1738/muse-desktop/actions/workflows/ci.yml/badge.svg)](https://github.com/robzilla1738/muse-desktop/actions/workflows/ci.yml)
+[![Checks](https://github.com/muntrav/mused/actions/workflows/ci.yml/badge.svg)](https://github.com/muntrav/mused/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/source-MIT-blue)](LICENSE)
 [![macOS 13+](https://img.shields.io/badge/macOS-13%2B-blue)](docs/compatibility.md)
 [![Windows 10/11](https://img.shields.io/badge/Windows-10%2F11-blue)](docs/compatibility.md)
 [![Linux](https://img.shields.io/badge/Linux-x64%20%7C%20arm64-blue)](docs/compatibility.md)
 
-**Unofficial community software by [Robert Courson (@robzilla1738)](https://github.com/robzilla1738). Not affiliated with, endorsed by, sponsored by, or supported by Meta.** Muse Code is a separate product of Meta. This repository provides the desktop companion, not the CLI or a Meta account.
+**Mused is maintained in this repository. Not affiliated with, endorsed by, sponsored by, or supported by Meta.** Muse Code is a separate product of Meta. This repository provides the desktop companion, not the CLI or a Meta account.
 
-A desktop home for Muse Code across macOS, Windows, and Linux. Your installed CLI, existing sign-in, project settings, and saved conversations—with a unified Mac-inspired desktop interface built around the way you work.
+Mused is a desktop home for Muse Code across macOS, Windows, and Linux. Your installed CLI, existing sign-in, project settings, and saved conversations—with a unified Mac-inspired desktop interface built around the way you work.
 
-![Muse Desktop in the default blue theme](docs/screenshots/muse.png)
+![Mused in the default blue theme](docs/screenshots/muse.png)
 
-**[Download 0.2.0](https://github.com/robzilla1738/muse-desktop/releases/tag/v0.2.0)** — macOS builds are Developer ID signed by Robert Courson and notarized by Apple (Apple Silicon and Intel). Windows (`NSIS` / `ZIP`) and Linux (`AppImage` / `tar.gz`) builds use the same unified interface. CI artifacts are separate, unsigned development builds.
+**[Download 0.2.0](https://github.com/muntrav/mused/releases/tag/v0.2.0)** — macOS builds are Developer ID signed by Robert Courson and notarized by Apple (Apple Silicon and Intel). Windows (`NSIS` / `ZIP`) and Linux (`AppImage` / `tar.gz`) builds use the same unified interface. CI artifacts are separate, unsigned development builds.
+
+## Mused roadmap
+
+The next development stages are documented in [the phased execution plan](docs/mused-phased-execution-plan.md). Mused will preserve the current layout, themes, logos, mascot, artwork, typography, spacing, window chrome, and interaction language while adding provider-neutral adapters, a hosted browser interface, and an approval-gated self-developing coding environment.
 
 ## What it does
 
@@ -31,20 +35,20 @@ A desktop home for Muse Code across macOS, Windows, and Linux. Your installed CL
 
 <p><img src="docs/screenshots/daylight.png" width="49%" alt="Daylight theme" /> <img src="docs/screenshots/moonlight.png" width="49%" alt="Moonlight theme" /></p>
 <p><img src="docs/screenshots/grove.png" width="49%" alt="Grove theme" /> <img src="docs/screenshots/appearance.png" width="49%" alt="Appearance settings" /></p>
-<p><img src="docs/screenshots/windows.png" width="49%" alt="Muse Desktop on Windows" /> <img src="docs/screenshots/linux.png" width="49%" alt="Muse Desktop on Linux" /></p>
+<p><img src="docs/screenshots/windows.png" width="49%" alt="Mused on Windows" /> <img src="docs/screenshots/linux.png" width="49%" alt="Mused on Linux" /></p>
 
 ## Install
 
 | Platform                    | Download                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| macOS (Apple Silicon)       | [Apple Silicon DMG](https://github.com/robzilla1738/muse-desktop/releases/download/v0.2.0/Muse-Desktop-0.2.0-arm64.dmg) · [ZIP](https://github.com/robzilla1738/muse-desktop/releases/download/v0.2.0/Muse-Desktop-0.2.0-arm64.zip)                                                                                                                                                                                                                                                                                      |
-| macOS (Intel)               | [Intel DMG](https://github.com/robzilla1738/muse-desktop/releases/download/v0.2.0/Muse-Desktop-0.2.0-x64.dmg) · [ZIP](https://github.com/robzilla1738/muse-desktop/releases/download/v0.2.0/Muse-Desktop-0.2.0-x64.zip)                                                                                                                                                                                                                                                                                                  |
-| Windows 10/11 (x64 & ARM64) | [x64 Installer (.exe)](https://github.com/robzilla1738/muse-desktop/releases/download/v0.2.0/Muse-Desktop-0.2.0-win-x64.exe) · [ARM64 Installer (.exe)](https://github.com/robzilla1738/muse-desktop/releases/download/v0.2.0/Muse-Desktop-0.2.0-win-arm64.exe) · [x64 ZIP](https://github.com/robzilla1738/muse-desktop/releases/download/v0.2.0/Muse-Desktop-0.2.0-win-x64.zip) · [ARM64 ZIP](https://github.com/robzilla1738/muse-desktop/releases/download/v0.2.0/Muse-Desktop-0.2.0-win-arm64.zip)                  |
-| Linux (x64 & ARM64)         | [x64 AppImage](https://github.com/robzilla1738/muse-desktop/releases/download/v0.2.0/Muse-Desktop-0.2.0-linux-x86_64.AppImage) · [ARM64 AppImage](https://github.com/robzilla1738/muse-desktop/releases/download/v0.2.0/Muse-Desktop-0.2.0-linux-arm64.AppImage) · [x64 tar.gz](https://github.com/robzilla1738/muse-desktop/releases/download/v0.2.0/Muse-Desktop-0.2.0-linux-x64.tar.gz) · [ARM64 tar.gz](https://github.com/robzilla1738/muse-desktop/releases/download/v0.2.0/Muse-Desktop-0.2.0-linux-arm64.tar.gz) |
+| macOS (Apple Silicon)       | [Apple Silicon DMG](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-arm64.dmg) · [ZIP](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-arm64.zip)                                                                                                                                                                                                                                                                                      |
+| macOS (Intel)               | [Intel DMG](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-x64.dmg) · [ZIP](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-x64.zip)                                                                                                                                                                                                                                                                                                  |
+| Windows 10/11 (x64 & ARM64) | [x64 Installer (.exe)](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-win-x64.exe) · [ARM64 Installer (.exe)](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-win-arm64.exe) · [x64 ZIP](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-win-x64.zip) · [ARM64 ZIP](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-win-arm64.zip)                  |
+| Linux (x64 & ARM64)         | [x64 AppImage](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-linux-x86_64.AppImage) · [ARM64 AppImage](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-linux-arm64.AppImage) · [x64 tar.gz](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-linux-x64.tar.gz) · [ARM64 tar.gz](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-linux-arm64.tar.gz) |
 
 Requires macOS 13+, Windows 10/11, or Linux, and a separately installed, signed-in Muse Code CLI. Desktop discovers your CLI and existing conversations automatically. Use **Settings → Muse Code** if you need to select a custom executable. The first project you work in requires your trust confirmation.
 
-Check for updates from **Muse Desktop → Check for Updates…** or **Settings → About**. Daily checks are optional. See [release verification and known limits](docs/release-readiness.md) and the [supported CLI workflows](docs/compatibility.md).
+Check for updates from **Mused → Check for Updates…** or **Settings → About**. Daily checks are optional. See [release verification and known limits](docs/release-readiness.md) and the [supported CLI workflows](docs/compatibility.md).
 
 ## Run locally
 
