@@ -39,11 +39,11 @@ No transcript mirror, credential database, or telemetry service is introduced. P
 
 Mused uses a split delivery and runtime model:
 
-| Responsibility | Boundary |
-| --- | --- |
-| Source, pull requests, checks, packaging, and release artifacts | GitHub and GitHub Actions |
-| Browser client, HTTPS, previews, and edge access control | Cloudflare Pages, Access, and Workers |
-| Persistent agent sessions, isolated workspaces, live dev servers, and HMR | Protected VPS runtime |
+| Responsibility                                                            | Boundary                              |
+| ------------------------------------------------------------------------- | ------------------------------------- |
+| Source, pull requests, checks, packaging, and release artifacts           | GitHub and GitHub Actions             |
+| Browser client, HTTPS, previews, and edge access control                  | Cloudflare Pages, Access, and Workers |
+| Persistent agent sessions, isolated workspaces, live dev servers, and HMR | Protected VPS runtime                 |
 
 The hosted path is:
 

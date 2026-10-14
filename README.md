@@ -24,6 +24,21 @@ GitHub is the source of truth for Mused. GitHub Actions performs typechecking, t
 
 Persistent Codex/Muse sessions, isolated project workspaces, live development servers, and hot-reload previews run on a protected VPS runtime. The VPS is not the release build machine: production artifacts arrive through the approved CI/CD path.
 
+### Slice 1 hosted preview
+
+Build the browser shell and start the local fake-agent gateway with a protected access
+code:
+
+```sh
+npm run web:build
+MUSED_GATEWAY_SECRET='<protected-secret>' npm run gateway:dev
+```
+
+The gateway serves the built browser shell on its configured local port. For a VPS
+deployment, supply the secret through the host's protected secret mechanism, put the
+gateway behind an authenticated Cloudflare Tunnel or equivalent edge boundary, and do
+not expose the provider process port directly.
+
 ## What it does
 
 - Discovers your existing `muse` installation across macOS, Linux, and Windows, including your login-shell environment and standard installation paths. No separate API key or desktop account.
@@ -45,10 +60,10 @@ Persistent Codex/Muse sessions, isolated project workspaces, live development se
 
 ## Install
 
-| Platform                    | Download                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| macOS (Apple Silicon)       | [Apple Silicon DMG](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-arm64.dmg) · [ZIP](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-arm64.zip)                                                                                                                                                                                                                                                                                      |
-| macOS (Intel)               | [Intel DMG](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-x64.dmg) · [ZIP](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-x64.zip)                                                                                                                                                                                                                                                                                                  |
+| Platform                    | Download                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| macOS (Apple Silicon)       | [Apple Silicon DMG](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-arm64.dmg) · [ZIP](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-arm64.zip)                                                                                                                                                                                                                                                              |
+| macOS (Intel)               | [Intel DMG](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-x64.dmg) · [ZIP](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-x64.zip)                                                                                                                                                                                                                                                                          |
 | Windows 10/11 (x64 & ARM64) | [x64 Installer (.exe)](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-win-x64.exe) · [ARM64 Installer (.exe)](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-win-arm64.exe) · [x64 ZIP](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-win-x64.zip) · [ARM64 ZIP](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-win-arm64.zip)                  |
 | Linux (x64 & ARM64)         | [x64 AppImage](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-linux-x86_64.AppImage) · [ARM64 AppImage](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-linux-arm64.AppImage) · [x64 tar.gz](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-linux-x64.tar.gz) · [ARM64 tar.gz](https://github.com/muntrav/mused/releases/download/v0.2.0/Muse-Desktop-0.2.0-linux-arm64.tar.gz) |
 
