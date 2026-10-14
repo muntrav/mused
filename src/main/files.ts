@@ -1,6 +1,56 @@
 import { readFile, readdir, realpath, stat } from 'node:fs/promises'
 import { isAbsolute, join, relative, resolve } from 'node:path'
-import type { ProjectFile } from '../shared/protocol'
+import type { ProjectFile, WorkspaceProject } from '../shared/protocol'
+
+const ignoredProjectDirectories = new Set(['.git', 'node_modules', '.DS_Store'])
+const projectMarkers = ['package.json', 'pyproject.toml', 'Cargo.toml', 'go.mod', 'composer.json']
+
+async function looksLikeProject(path: string) {
+  try {
+    const git = await stat(join(path, '.git'))
+    if (git.isDirectory() || git.isFile()) return true
+  } catch {
+    // Continue with language/package markers.
+  }
+  for (const marker of projectMarkers) {
+    try {
+      if ((await stat(join(path, marker))).isFile()) return true
+    } catch {
+      // Try the next marker.
+    }
+  }
+  return false
+}
+
+export async function listAvailableProjects(roots: string[]): Promise<WorkspaceProject[]> {
+  const projects = new Map<string, WorkspaceProject>()
+  for (const configuredRoot of roots) {
+    try {
+      const root = await realpath(configuredRoot)
+      if (!(await stat(root)).isDirectory()) continue
+      if (await looksLikeProject(root))
+        projects.set(root, {
+          path: root,
+          name: root.split(/[\\/]/).filter(Boolean).at(-1) || root,
+        })
+      const entries = await readdir(root, { withFileTypes: true })
+      for (const entry of entries) {
+        if (
+          !entry.isDirectory() ||
+          entry.isSymbolicLink() ||
+          ignoredProjectDirectories.has(entry.name)
+        )
+          continue
+        const project = join(root, entry.name)
+        if (await looksLikeProject(project))
+          projects.set(project, { path: project, name: entry.name })
+      }
+    } catch {
+      // A stale or inaccessible configured root is omitted from the catalog.
+    }
+  }
+  return [...projects.values()].sort((a, b) => a.name.localeCompare(b.name))
+}
 
 export async function resolveProjectPath(project: string, path: string) {
   const root = await realpath(project)
