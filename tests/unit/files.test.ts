@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { listAvailableProjects, listProjectFiles, readProjectFile } from '../../src/main/files'
+import { listProjectFiles, readProjectFile } from '../../src/main/files'
 import { parseGitStatus } from '../../src/main/git'
 import { readPreferences, writePreferences } from '../../src/main/preferences'
 import { projectName } from '../../src/renderer/src/components/Primitives'
@@ -28,22 +28,6 @@ describe('project filesystem boundary', () => {
     await expect(readProjectFile(root, 'link')).rejects.toThrow('outside')
     expect((await listProjectFiles(root, '')).map((file) => file.name)).toEqual(['hello.ts'])
   })
-  it('catalogues only configured project directories', async () => {
-    const root = join(temporary, 'workspaces')
-    const app = join(root, 'mused')
-    const notes = join(root, 'notes')
-    await mkdir(join(app, '.git'), { recursive: true })
-    await mkdir(notes, { recursive: true })
-    await writeFile(join(notes, 'package.json'), '{}')
-    await mkdir(join(root, 'node_modules'), { recursive: true })
-    const projects = await listAvailableProjects([root])
-    expect(projects.map((project) => project.name)).toEqual(['mused', 'notes'])
-    expect(projects.map((project) => project.path)).toEqual([
-      await realpath(app),
-      await realpath(notes),
-    ])
-  })
-
   it('rejects binary and oversized text previews', async () => {
     await writeFile(join(temporary, 'binary'), Buffer.from([1, 0, 2]))
     await writeFile(join(temporary, 'large'), 'x'.repeat(512 * 1024 + 1))
@@ -91,9 +75,7 @@ describe('local preferences', () => {
     })
     for (const [key, value] of Object.entries(current)) {
       if (key === 'trustedProjects' || key === 'recentProjects') continue
-      expect(preferencesPatchSchema.parse({ [key]: value })).toEqual({
-        [key]: value,
-      })
+      expect(preferencesPatchSchema.parse({ [key]: value })).toEqual({ [key]: value })
     }
     const patch = preferencesPatchSchema.parse({ reasoningEffort: 'low' })
     expect(preferencesSchema.parse({ ...current, ...patch })).toEqual({
@@ -107,10 +89,7 @@ describe('local preferences', () => {
   it('defaults to Muse and atomically saves independent settings', async () => {
     const path = join(temporary, 'desktop/preferences.json')
     expect((await readPreferences(path)).theme).toBe('muse')
-    const preferences = preferencesSchema.parse({
-      theme: 'grove',
-      backgroundIntensity: 35,
-    })
+    const preferences = preferencesSchema.parse({ theme: 'grove', backgroundIntensity: 35 })
     await writePreferences(path, preferences)
     expect(await readPreferences(path)).toEqual(preferences)
     expect(JSON.parse(await readFile(path, 'utf8')).theme).toBe('grove')

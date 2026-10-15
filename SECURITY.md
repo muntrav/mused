@@ -1,6 +1,6 @@
 # Security
 
-The supported development line is 0.1.x. Use the [private reporting form](https://github.com/muntrav/mused/security/advisories/new) to contact Robert Courson. Use **Security → Report a vulnerability** to contact the maintainers privately; if unavailable, request a private reporting channel without posting exploit details or personal data.
+The supported development line is 0.1.x. Use the [private reporting form](https://github.com/robzilla1738/muse-desktop/security/advisories/new) to contact Robert Courson. Use **Security → Report a vulnerability** to contact the maintainers privately; if unavailable, request a private reporting channel without posting exploit details or personal data.
 
 Include the app and CLI versions, platform, minimal reproduction, impact, and whether the issue crosses the renderer/main boundary, a project-file boundary, or an approval boundary. Do not include tokens, production transcripts, or a user's home-directory contents.
 

@@ -42,20 +42,8 @@ export class MuseHost {
   private timers = new Map<string, ReturnType<typeof setTimeout>>()
   private refreshing = new Set<string>()
   private closing = false
-  private listeners = new Set<(event: AppEvent) => void>()
 
-  constructor(emit: (event: AppEvent) => void) {
-    this.listeners.add(emit)
-  }
-
-  subscribe(listener: (event: AppEvent) => void) {
-    this.listeners.add(listener)
-    return () => this.listeners.delete(listener)
-  }
-
-  private emit(event: AppEvent) {
-    for (const listener of this.listeners) listener(event)
-  }
+  constructor(private emit: (event: AppEvent) => void) {}
 
   connect(cliPath: string): Promise<ConnectionStatus> {
     if (this.connecting) return this.connecting

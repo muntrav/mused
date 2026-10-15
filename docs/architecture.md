@@ -35,23 +35,6 @@ Commands use SDK-generated command IDs with one attempt. The app does not blindl
 
 No transcript mirror, credential database, or telemetry service is introduced. Pending approval cards carry the current requirement token, including staged requirements. Server labels and choices remain authoritative.
 
-## Deployment boundary
-
-Mused uses a split delivery and runtime model:
-
-| Responsibility                                                            | Boundary                              |
-| ------------------------------------------------------------------------- | ------------------------------------- |
-| Source, pull requests, checks, packaging, and release artifacts           | GitHub and GitHub Actions             |
-| Browser client, HTTPS, previews, and edge access control                  | Cloudflare Pages, Access, and Workers |
-| Persistent agent sessions, isolated workspaces, live dev servers, and HMR | Protected VPS runtime                 |
-
-The hosted path is:
-
-    Browser -> Cloudflare Pages / Access / Worker -> private Cloudflare Tunnel -> VPS gateway
-             -> isolated session/workspace supervisor -> Muse or Codex app-server
-
-The VPS must not be the normal CI or production release build machine. It receives verified, immutable artifacts where applicable and runs persistent workloads that GitHub Actions and Cloudflare cannot provide reliably. The VPS runtime is isolated from unrelated services with a separate service account or container boundary, authenticated WSS, per-workspace CPU/memory/time limits, concurrency limits, idle cleanup, disk quotas, and no publicly exposed provider port.
-
 ## Verification
 
 Unit coverage checks file containment, symlink rejection, binary and size limits, Git filename parsing, preference persistence, approval freshness, streaming revisions, gap recovery, question answers, follow-up modes, cancellation dispatch, paged transcript recovery, and bounded voice encoding. The integration script exercises the real CLI with its echo provider across a process restart. Playwright drives the real Electron application and real echo CLI, including themes, native bridge rejection cases, project browsing, search, sending, renaming, fresh-install history discovery, themed menu keyboard behavior, and simulated microphone capture/cancellation/draft insertion.

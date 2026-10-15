@@ -1,6 +1,6 @@
 # Notices and asset provenance
 
-**Mused is community software maintained in this repository. It is not affiliated with, endorsed by, sponsored by, or supported by Meta.** Meta, Muse, and Muse Code names and marks belong to their respective owners. No affiliation, endorsement, or trademark license is implied.
+**Muse Desktop is unofficial community software, maintained by Robert Courson (@robzilla1738). It is not affiliated with, endorsed by, sponsored by, or supported by Meta.** Meta, Muse, and Muse Code names and marks belong to their respective owners. No affiliation, endorsement, or trademark license is implied.
 
 The MIT license covers the original application source and documentation. It does not grant rights to third-party names, marks, reference images, or underlying character designs.
 

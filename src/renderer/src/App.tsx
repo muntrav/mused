@@ -41,7 +41,6 @@ import {
   type Preferences,
   type SessionView,
   type Theme,
-  type WorkspaceProject,
 } from '../../shared/protocol'
 import { Composer } from './components/Composer'
 import { CommandMenu } from './components/CommandMenu'
@@ -56,7 +55,6 @@ import {
 } from './components/Primitives'
 import { Settings, themes } from './components/Settings'
 import { Transcript } from './components/Transcript'
-import { WorkspacePicker } from './components/WorkspacePicker'
 import { DocsPage, FilesPage, ProjectsPage } from './components/WorkspacePages'
 
 const starters = [
@@ -98,9 +96,7 @@ function conversationGroup(session: MuseSession, pinned: string[]) {
 
 export function App() {
   const [preferences, setPreferences] = useState<Preferences>(() => preferencesSchema.parse({}))
-  const [status, setStatus] = useState<ConnectionStatus>({
-    state: 'connecting',
-  })
+  const [status, setStatus] = useState<ConnectionStatus>({ state: 'connecting' })
   const [version, setVersion] = useState('0.2.0')
   const [platform, setPlatform] = useState('darwin')
   const [sessions, setSessions] = useState<MuseSession[]>([])
@@ -125,14 +121,7 @@ export function App() {
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
   const [rename, setRename] = useState(false)
   const [newName, setNewName] = useState('')
-  const [toast, setToast] = useState<{
-    message: string
-    kind: 'error' | 'success'
-  } | null>(null)
-  const [workspacePickerOpen, setWorkspacePickerOpen] = useState(false)
-  const [workspaceProjects, setWorkspaceProjects] = useState<WorkspaceProject[]>([])
-  const [workspaceLoading, setWorkspaceLoading] = useState(false)
-  const [workspaceError, setWorkspaceError] = useState('')
+  const [toast, setToast] = useState<{ message: string; kind: 'error' | 'success' } | null>(null)
   const [darkSystem, setDarkSystem] = useState(
     window.matchMedia('(prefers-color-scheme: dark)').matches,
   )
@@ -264,19 +253,6 @@ export function App() {
     setArchived(false)
   }
   const chooseProject = async () => {
-    if (window.muse.listProjects) {
-      setWorkspacePickerOpen(true)
-      setWorkspaceLoading(true)
-      setWorkspaceError('')
-      try {
-        setWorkspaceProjects(await window.muse.listProjects())
-      } catch (error) {
-        setWorkspaceError(error instanceof Error ? error.message : String(error))
-      } finally {
-        setWorkspaceLoading(false)
-      }
-      return
-    }
     try {
       const chosen = await window.muse.chooseProject()
       if (chosen) {
@@ -286,21 +262,6 @@ export function App() {
     } catch (error) {
       showError(error instanceof Error ? error.message : String(error))
     }
-  }
-  const selectWorkspace = (entry: WorkspaceProject) => {
-    setWorkspacePickerOpen(false)
-    setProject(entry.path)
-    setWorkspaceError('')
-    void window.muse
-      .savePreferences({
-        recentProjects: [
-          entry.path,
-          ...preferences.recentProjects.filter((path) => path !== entry.path),
-        ].slice(0, 30),
-      })
-      .then(setPreferences)
-      .catch((error: Error) => showError(error.message))
-    startNew()
   }
   const openSession = async (sessionId: string) => {
     setPage('chat')
@@ -410,11 +371,7 @@ export function App() {
             const parsed = effortSchema.safeParse(argument.toLowerCase())
             if (!parsed.success)
               throw new Error('Choose none, minimal, low, medium, high, xhigh, max, or ultra.')
-            setPreferences(
-              await window.muse.savePreferences({
-                reasoningEffort: parsed.data,
-              }),
-            )
+            setPreferences(await window.muse.savePreferences({ reasoningEffort: parsed.data }))
           }
         }
         if (['compact', 'rename', 'stop'].includes(name)) {
@@ -443,8 +400,9 @@ export function App() {
       if (!current) {
         let root = project
         if (!root) {
-          await chooseProject()
-          return false
+          root = (await window.muse.chooseProject()) || ''
+          if (!root) return false
+          setProject(root)
         }
         current = await window.muse.createSession(root, modelId || undefined)
         if (openSequence.current === sequence) activeId.current = current.session.sessionId
@@ -546,11 +504,7 @@ export function App() {
   return (
     <div
       className={`app-shell ${sidebar ? '' : 'sidebar-hidden'} ${inspector ? 'with-inspector' : ''}`}
-      style={
-        {
-          '--background-presence': preferences.backgroundIntensity / 100,
-        } as CSSProperties
-      }
+      style={{ '--background-presence': preferences.backgroundIntensity / 100 } as CSSProperties}
     >
       {platform !== 'darwin' && (
         <div className="window-traffic-lights" role="group" aria-label="Window controls">
@@ -690,12 +644,7 @@ export function App() {
                 }}
                 options={[
                   { value: '', label: 'All projects' },
-                  ...Array.from(
-                    new Set([
-                      ...workspaceProjects.map((entry) => entry.path),
-                      ...preferences.recentProjects,
-                    ]),
-                  ).map((path) => ({
+                  ...preferences.recentProjects.map((path) => ({
                     value: path,
                     label: projectName(path),
                   })),
@@ -1078,10 +1027,7 @@ export function App() {
                         className="starter-card"
                         key={starter.title}
                         onClick={() => {
-                          setDrafts((current) => ({
-                            ...current,
-                            [draftKey]: starter.prompt,
-                          }))
+                          setDrafts((current) => ({ ...current, [draftKey]: starter.prompt }))
                           document.querySelector<HTMLTextAreaElement>('textarea')?.focus()
                         }}
                       >
@@ -1210,16 +1156,6 @@ export function App() {
             </div>
           </form>
         </Dialog>
-      )}
-      {workspacePickerOpen && (
-        <WorkspacePicker
-          projects={workspaceProjects}
-          loading={workspaceLoading}
-          error={workspaceError}
-          onClose={() => setWorkspacePickerOpen(false)}
-          onRefresh={() => void chooseProject()}
-          onSelect={selectWorkspace}
-        />
       )}
       {toast && (
         <div className={`toast ${toast.kind}`} role={toast.kind === 'error' ? 'alert' : 'status'}>

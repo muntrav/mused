@@ -189,7 +189,6 @@ export type GitChange = { path: string; status: string; staged: boolean }
 export type GitStatus = { branch: string; changes: GitChange[]; isRepository: boolean }
 export type Attachment = { id: string; name: string; kind: 'image' | 'text'; size: number }
 export type ProjectFile = { name: string; path: string; directory: boolean }
-export type WorkspaceProject = { name: string; path: string }
 export type AppEvent =
   | { type: 'connection'; status: ConnectionStatus }
   | { type: 'session'; view: SessionView }
@@ -220,7 +219,6 @@ export interface DesktopAPI {
   connect(): Promise<ConnectionStatus>
   chooseCli(): Promise<string | null>
   chooseProject(): Promise<string | null>
-  listProjects?: () => Promise<WorkspaceProject[]>
   savePreferences(patch: Partial<Preferences>): Promise<Preferences>
   listSessions(cursor?: string): Promise<{ sessions: MuseSession[]; nextCursor: string | null }>
   createSession(project: string, modelId?: string): Promise<SessionView>

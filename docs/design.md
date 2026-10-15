@@ -1,6 +1,6 @@
 # Design system
 
-Mused uses a persistent sidebar, one primary conversation pane, and an optional project inspector. Traffic lights sit in a draggable titlebar (using native inset traffic lights on macOS and matching custom traffic-light window controls on frameless Windows and Linux windows). Messages and the titlebar sit directly on the background without shadow panels or a header divider. The composer stays visible while conversation content scrolls; the view follows incoming messages only while the reader is near the bottom.
+Muse Desktop uses a persistent sidebar, one primary conversation pane, and an optional project inspector. Traffic lights sit in a draggable titlebar (using native inset traffic lights on macOS and matching custom traffic-light window controls on frameless Windows and Linux windows). Messages and the titlebar sit directly on the background without shadow panels or a header divider. The composer stays visible while conversation content scrolls; the view follows incoming messages only while the reader is near the bottom.
 
 ## Themes
 

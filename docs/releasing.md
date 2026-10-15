@@ -1,12 +1,6 @@
 # Building and releasing
 
-Mused is an **unofficial** community project maintained in this repository. Keep the affiliation notice in app metadata, release notes, and redistribution notices.
-
-## CI and VPS boundary
-
-GitHub Actions is the canonical production build and verification environment. It runs typechecking, tests, packaging, security checks, and release artifact generation. Cloudflare handles browser previews and the hosted web boundary.
-
-The VPS is reserved for persistent workloads that require a live runtime: authenticated agent sessions, isolated project workspaces, development servers, and hot-reload previews. Do not use it as an untracked CI machine or compile releases directly on production infrastructure. Deploy verified artifacts through the approved release workflow, and keep the VPS runtime isolated with resource limits, idle cleanup, authenticated access, and no public Codex/Muse process port.
+Muse Desktop is an **unofficial** project maintained by Robert Courson. Keep the affiliation notice in app metadata, release notes, and redistribution notices.
 
 ## Local builds
 
